@@ -24,10 +24,21 @@ module.exports = {
 
   module: {
     rules: [{
+      test: /\.ts?$/,
+      enforce: 'pre',
+      loader: 'tslint-loader',
+      exclude: [
+        /node_modules/
+      ],
+      query: {
+        emitErrors: true,
+        formatter: 'stylish'
+      }
+    }, {
       test: /\.ts$/,
       loader: 'ts-loader'
     }, {
-      test: /\.css/,
+      test: /\.css$/,
       loaders: [
         'style-loader',
         'css-loader'
@@ -38,8 +49,8 @@ module.exports = {
   devtool: 'inline-source-map',
 
   devServer: {
-    contentBase: path.resolve(__dirname, "dist"),
-    stats: "errors-only"
+    contentBase: path.resolve(__dirname, 'dist'),
+    stats: 'errors-only'
   },
 
   plugins: [
