@@ -47,10 +47,7 @@ export interface FileMeta {
 interface RequestConfig {
   headers?: Object
   body?: any
-  onCreate?: () => void
   onProgress?: (progress: number) => void
-  onSuccess?: (response?: any) => void
-  onError?: (error?: any) => void
 }
 
 interface UploadChunksConfig extends RequestConfig {
@@ -96,11 +93,12 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
   const resume$ = new Subject()
   const retry$ = new Subject()
   const abort$ = new Subject()
+  const progress$ = new Subject()
 
   const upload$ = startChunkUpload(file, config)
     .concatMap((fileMeta: FileMeta) => {
       const blobs = sliceFile(file, fileMeta.chunks, fileMeta.chunkSize)
-      return uploadAllChunks(blobs, fileMeta, config)
+      return uploadAllChunks(blobs, fileMeta, progress$, config)
         .takeUntil(pause$)
         .repeatWhen(() => resume$)
         .mapTo(fileMeta)
@@ -122,32 +120,27 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
     pause,
     resume,
     retry,
-    abort
+    abort,
+
+    progress$
   }
 }
 
 export const uploadAllChunks = (
   chunks: Blob[],
   fileMeta: FileMeta,
+  progress$: Subject<number>,
   config: UploadChunksConfig
 ) => {
-  const {
-    body,
-    onCreate = noop,
-    onProgress = noop,
-    onSuccess = noop,
-    onError = noop,
-  } = config
-
   let totalLoaded = 0
 
   const chunkRequests$ = chunks.map((chunk, i) => {
     const chunkUrl = config.getChunkUrl(fileMeta, i)
     let lastLoaded = 0
-    const innerProgressSubscriber = Subscriber.create((pe: any) => {
+    const innerProgressSubscriber = Subscriber.create((pe: ProgressEvent) => {
       const loaded = pe.loaded
       totalLoaded += (loaded - lastLoaded)
-      onProgress(totalLoaded / fileMeta.fileSize)
+      progress$.next(totalLoaded / fileMeta.fileSize)
       lastLoaded = loaded
     } , noop)
     let completed = false

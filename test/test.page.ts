@@ -50,6 +50,15 @@ const uploadConfig = {
   },
   getChunkFinishUrl: (fileMeta) => {
     return `${HOST}/upload/chunk/${fileMeta.fileKey}`
+  },
+  onSuccess: () => {
+    console.log('success')
+  },
+  onError: () => {
+    console.log('error')
+  },
+  onProgress: (o) => {
+    (<any>document.getElementById('progress')).value = String(Math.round(o.loaded / o.total * 100))
   }
 }
 
@@ -60,19 +69,16 @@ const handleUpload = (files$) => {
     })
     .subscribe(
       (buttons) => {
-        const { start, abort, pause, resume, retry, progress$ } = buttons
+        const { start, abort, pause, resume, retry } = buttons
         start()
         Observable.fromEvent(document.getElementById('abort'), 'click')
-          .subscribe(abort)
+          .subscribe(abort.bind(null))
         Observable.fromEvent(document.getElementById('pause'), 'click')
-          .subscribe(pause)
+          .subscribe(pause.bind(null))
         Observable.fromEvent(document.getElementById('resume'), 'click')
-          .subscribe(resume)
+          .subscribe(resume.bind(null))
         Observable.fromEvent(document.getElementById('retry'), 'click')
-          .subscribe(retry)
-        progress$.subscribe((p: number) => {
-          (<any>document.getElementById('progress')).value = String(Math.round(p * 100))
-        })
+          .subscribe(retry.bind(null))
       },
       console.error.bind(console),
       console.info.bind(console, 'completed')

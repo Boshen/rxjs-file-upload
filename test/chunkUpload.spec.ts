@@ -106,6 +106,29 @@ chunkTests.forEach((chunks) => {
 
     })
 
+    describe('onProgress', () => {
+
+      it('should report progress', () => {
+        const progress = sinon.spy()
+
+        const { start, progress$ } = chunkUpload(file, config)
+        start()
+
+        progress$.subscribe(progress)
+
+        server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
+        server.requests[1].upload.onprogress({ loaded: 100, total: fileMeta.fileSize })
+        server.requests[1].upload.onprogress({ loaded: 200, total: fileMeta.fileSize })
+        server.respondImmediately = true
+        server.respond()
+
+        progress.calledTwice
+        progress.firstCall.calledWith(100 / fileMeta.fileSize)
+        progress.secondCall.calledWith(100 / fileMeta.fileSize)
+      })
+
+    })
+
     describe('uploadAllChunks', () => {
 
       let startChunkUploadStub
@@ -134,20 +157,6 @@ chunkTests.forEach((chunks) => {
           expect(r.url).to.equal(config.getChunkUrl(fileMeta, i))
           expect(r.status).to.equal(200)
         })
-      })
-
-      it('should report progress', () => {
-        const onProgress = sinon.spy()
-
-        const { start } = chunkUpload(file, { ...config, onProgress })
-        start()
-
-        server.requests[0].upload.onprogress({ total: fileMeta.fileSize, loaded: 100 })
-        server.respondImmediately = true
-        server.respond()
-
-        expect(onProgress).to.be.called
-        expect(onProgress.getCall(0).args[0]).to.equal(0.1)
       })
 
       it('should abort all chunk uploads', () => {
