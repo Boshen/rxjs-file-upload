@@ -16,7 +16,7 @@ import 'rxjs/add/operator/retryWhen'
 import 'rxjs/add/operator/scan'
 import 'rxjs/add/operator/takeLast'
 import 'rxjs/add/operator/takeUntil'
-import 'rxjs/add/operator/takeWhile'
+import 'rxjs/add/operator/single'
 
 import { post } from './post'
 
@@ -101,7 +101,6 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
     .concatMap((fileMeta: FileMeta) => {
       const blobs = sliceFile(file, fileMeta.chunks, fileMeta.chunkSize)
       return uploadAllChunks(blobs, fileMeta, config)
-        .takeLast(1)
         .takeUntil(pause$)
         .repeatWhen(() => resume$)
         .mapTo(fileMeta)
@@ -169,13 +168,14 @@ export const uploadAllChunks = (
     .mergeAll(3)
     .scan((acc, x: ChunkStatus) => {
       acc[x.completed ? 'completes' : 'errors'][x.index] = true
-      if (Object.keys(acc.errors).length >= 3) {
+      const errorsCount = Object.keys(acc.errors).length
+      if (errorsCount >= Math.min(chunks.length, 3)) {
         acc.errors = {}
         throw new Error()
       }
       return acc
     }, { completes: {}, errors: {} })
-    .takeWhile((acc) => {
-      return Object.keys(acc.completes).length < chunks.length
+    .single((acc) => {
+      return Object.keys(acc.completes).length === chunks.length
     })
 }
