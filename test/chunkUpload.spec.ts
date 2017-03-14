@@ -44,12 +44,31 @@ describe('chunkUpload', () => {
       const chunkUrl = config.getChunkUrl(fileMeta, i)
       server.respondWith('POST', chunkUrl, [200, {}, ''])
     })
-    server.respondWith('POST', config.getChunkStartUrl(), [200, {}, ''])
+    server.respondWith('POST', config.getChunkStartUrl(), [200, {}, JSON.stringify(fileMeta)])
     server.respondWith('POST', config.getChunkFinishUrl(fileMeta), [200, {}, ''])
   })
 
   afterEach(() => {
     server.restore()
+  })
+
+  it('should startChunkUpload -> uploadAllChunks -> finishChunkUpload', () => {
+    const { start } = chunkUpload(file, config)
+    start()
+
+    server.respondImmediately = true
+    server.respond()
+
+    expect(server.requests.length).to.equal(chunks.length + 2)
+    expect(server.requests[0].url).to.equal(config.getChunkStartUrl())
+    expect(server.requests[0].status).to.equal(200)
+    for (let i = 1; i < 11; i++) {
+      expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i - 1))
+      expect(server.requests[i].status).to.equal(200)
+    }
+    expect(server.requests[11].url).to.equal(config.getChunkFinishUrl(fileMeta))
+    expect(server.requests[11].status).to.equal(200)
+
   })
 
   describe('startChunkUpload', () => {

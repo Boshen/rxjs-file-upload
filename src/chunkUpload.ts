@@ -101,9 +101,9 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
     .concatMap((fileMeta: FileMeta) => {
       const blobs = sliceFile(file, fileMeta.chunks, fileMeta.chunkSize)
       return uploadAllChunks(blobs, fileMeta, config)
+        .takeLast(1)
         .takeUntil(pause$)
         .repeatWhen(() => resume$)
-        .takeLast(1)
         .mapTo(fileMeta)
     })
     .concatMap((fileMeta: FileMeta) => {
