@@ -40,7 +40,7 @@ const HOST = ''
 
 const uploadConfig = {
   headers: {
-    'Authorization': ''
+    Authorization: ''
   },
   getChunkStartUrl: () => {
     return `${HOST}/upload/chunk`
@@ -50,15 +50,6 @@ const uploadConfig = {
   },
   getChunkFinishUrl: (fileMeta) => {
     return `${HOST}/upload/chunk/${fileMeta.fileKey}`
-  },
-  onSuccess: () => {
-    console.log('success')
-  },
-  onError: () => {
-    console.log('error')
-  },
-  onProgress: (o) => {
-    (<any>document.getElementById('progress')).value = String(Math.round(o.loaded / o.total * 100))
   }
 }
 
@@ -69,16 +60,19 @@ const handleUpload = (files$) => {
     })
     .subscribe(
       (buttons) => {
-        const { start, abort, pause, resume, retry } = buttons
+        const { start, abort, pause, resume, retry, progress$ } = buttons
         start()
         Observable.fromEvent(document.getElementById('abort'), 'click')
-          .subscribe(abort.bind(null))
+          .subscribe(abort)
         Observable.fromEvent(document.getElementById('pause'), 'click')
-          .subscribe(pause.bind(null))
+          .subscribe(pause)
         Observable.fromEvent(document.getElementById('resume'), 'click')
-          .subscribe(resume.bind(null))
+          .subscribe(resume)
         Observable.fromEvent(document.getElementById('retry'), 'click')
-          .subscribe(retry.bind(null))
+          .subscribe(retry)
+        progress$.subscribe((p: number) => {
+          (<HTMLProgressElement>document.getElementById('progress')).value = Math.round(p * 100)
+        })
       },
       console.error.bind(console),
       console.info.bind(console, 'completed')
@@ -100,11 +94,11 @@ handleUpload(
 )
 
 document.getElementById('run_test').addEventListener('click', () => {
-  var oldMochaDiv = document.getElementById('mocha')
+  let oldMochaDiv = document.getElementById('mocha')
   if (oldMochaDiv) {
     document.body.removeChild(oldMochaDiv)
   }
-  var mochaDiv = document.createElement('div')
+  let mochaDiv = document.createElement('div')
   mochaDiv.id = 'mocha'
   document.body.appendChild(mochaDiv)
   mocha.run()

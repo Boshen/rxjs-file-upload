@@ -45,8 +45,8 @@ export interface FileMeta {
 }
 
 interface RequestConfig {
-  headers?: Object
-  body?: any
+  headers?: {}
+  body?: {}
   onProgress?: (progress: number) => void
 }
 
@@ -60,8 +60,6 @@ interface ChunkStatus {
   completed: boolean
   index: string
 }
-
-const noop = (..._: any[]) => {}
 
 export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[] => {
   const result: Blob[] = []
@@ -77,15 +75,62 @@ export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[]
 export const startChunkUpload = (file: Blob, config: UploadChunksConfig) => {
   return post(config.getChunkStartUrl(), {
     fileMD5: new Date().toString(),
-    fileName: file['name'],
-    fileSize: file['size'],
-    lastUpdated: file['lastModifiedDate']
+    fileName: file['name'], // tslint:disable-line
+    fileSize: file['size'], // tslint:disable-line
+    lastUpdated: file['lastModifiedDate'] // tslint:disable-line
   }, config.headers)
 }
 
 export const finishChunkUpload = (fileMeta: FileMeta, config: UploadChunksConfig) => {
   const finishUrl = config.getChunkFinishUrl(fileMeta)
   return post(finishUrl, null, config.headers)
+}
+
+export const uploadAllChunks = (
+  chunks: Blob[],
+  fileMeta: FileMeta,
+  progress$: Subject<number>,
+  config: UploadChunksConfig
+) => {
+  let totalLoaded = 0
+
+  const chunkRequests$ = chunks.map((chunk, i) => {
+    const chunkUrl = config.getChunkUrl(fileMeta, i)
+    let lastLoaded = 0
+    const innerProgressSubscriber = Subscriber.create((pe: ProgressEvent) => {
+      const loaded = pe.loaded
+      totalLoaded += (loaded - lastLoaded)
+      progress$.next(totalLoaded / fileMeta.fileSize)
+      lastLoaded = loaded
+    } , () => {}) // tslint:disable-line
+    let completed = false
+    return Observable.defer(() => {
+      return completed ? Observable.empty() : post(chunkUrl, chunk, {
+          ...config.headers,
+          ...{ 'Content-Type': 'application/octet-stream;charset=utf-8' }
+        },
+        innerProgressSubscriber
+      )
+        .do(() => completed = true)
+        .map(() => ({ completed: true, index: i }))
+        .catch(() => Observable.of({ completed: false, index: i }))
+    })
+  })
+
+  return Observable.from(chunkRequests$)
+    .mergeAll(3)
+    .scan((acc, x: ChunkStatus) => {
+      acc[x.completed ? 'completes' : 'errors'][x.index] = true
+      const errorsCount = Object.keys(acc.errors).length
+      if (errorsCount >= (chunks.length > 3 ? 3 : 1)) {
+        acc.errors = {}
+        throw new Error()
+      }
+      return acc
+    }, { completes: {}, errors: {} })
+    .single((acc) => {
+      return Object.keys(acc.completes).length === chunks.length
+    })
 }
 
 export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
@@ -124,51 +169,4 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
 
     progress$
   }
-}
-
-export const uploadAllChunks = (
-  chunks: Blob[],
-  fileMeta: FileMeta,
-  progress$: Subject<number>,
-  config: UploadChunksConfig
-) => {
-  let totalLoaded = 0
-
-  const chunkRequests$ = chunks.map((chunk, i) => {
-    const chunkUrl = config.getChunkUrl(fileMeta, i)
-    let lastLoaded = 0
-    const innerProgressSubscriber = Subscriber.create((pe: ProgressEvent) => {
-      const loaded = pe.loaded
-      totalLoaded += (loaded - lastLoaded)
-      progress$.next(totalLoaded / fileMeta.fileSize)
-      lastLoaded = loaded
-    } , noop)
-    let completed = false
-    return Observable.defer(() => {
-      return completed ? Observable.empty() : post(chunkUrl, chunk, {
-          ...config.headers,
-          ...{ 'Content-Type': 'application/octet-stream;charset=utf-8' }
-        },
-        innerProgressSubscriber
-      )
-        .do(() => completed = true)
-        .map(() => ({ completed: true, index: i }))
-        .catch(() => Observable.of({ completed: false, index: i }))
-    })
-  })
-
-  return Observable.from(chunkRequests$)
-    .mergeAll(3)
-    .scan((acc, x: ChunkStatus) => {
-      acc[x.completed ? 'completes' : 'errors'][x.index] = true
-      const errorsCount = Object.keys(acc.errors).length
-      if (errorsCount >= (chunks.length <= 3 ? 1 : 3)) {
-        acc.errors = {}
-        throw new Error()
-      }
-      return acc
-    }, { completes: {}, errors: {} })
-    .single((acc) => {
-      return Object.keys(acc.completes).length === chunks.length
-    })
 }

@@ -3,7 +3,9 @@ import * as FileAPI from 'fileapi'
 
 import 'rxjs/add/operator/concatAll'
 
-export const handleDrop = (dropElement: HTMLElement, onHover: Function = (() => {})) => {
+export const handleDrop = (dropElement: HTMLElement, onHover?: Function) => {
+
+  onHover = onHover || (() => {}) // tslint:disable-line
 
   return Observable.create((observer) => {
     FileAPI.event.dnd(dropElement, onHover, (files) => {
