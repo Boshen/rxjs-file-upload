@@ -169,7 +169,7 @@ export const uploadAllChunks = (
     .scan((acc, x: ChunkStatus) => {
       acc[x.completed ? 'completes' : 'errors'][x.index] = true
       const errorsCount = Object.keys(acc.errors).length
-      if (errorsCount >= Math.min(chunks.length, 3)) {
+      if (errorsCount >= (chunks.length <= 3 ? 1 : 3)) {
         acc.errors = {}
         throw new Error()
       }

@@ -22,13 +22,13 @@ const config = {
   getChunkFinishUrl: (fileMeta) => `/uploadchunk/${fileMeta.fileKey}`
 }
 
-const oneChunk = ['chunk0']
+const createChunks = (n) => {
+  return Array.apply(null, Array(n)).map((i: number) => {
+    return 'chunk ' + i
+  })
+}
 
-const tenChunks = Array.apply(null, Array(10)).map((i: number) => {
-  return 'chunk ' + i
-})
-
-const chunkTests = [ oneChunk, tenChunks ]
+const chunkTests = [1, 2, 3, 10, 100].map(createChunks)
 
 chunkTests.forEach((chunks) => {
 
@@ -151,8 +151,6 @@ chunkTests.forEach((chunks) => {
       })
 
       it('should abort all chunk uploads', () => {
-        const onSuccess = sinon.spy()
-
         const { start, abort } = chunkUpload(file, config)
         start()
         abort()
@@ -161,166 +159,150 @@ chunkTests.forEach((chunks) => {
         server.respond()
 
 
-        if (chunks.length === 1) {
-          expect(server.requests.length).to.equal(1)
-        } else {
-          expect(server.requests.length).to.equal(3)
-        }
+        expect(server.requests.length).to.equal(Math.min(3, chunks.length))
         server.requests.forEach((request: any) => {
           expect(request.readyState).to.equal(0)
           expect(request.aborted).to.equal(true)
         })
-        expect(onSuccess).not.to.be.called
       })
 
-      if (chunks.length === 1) {
+      if (chunks.length <= 3) {
 
         it('should pause and resume chunk upload', () => {
-          const onSuccess = sinon.spy()
           const { start, pause, resume } = chunkUpload(file, config)
           start()
 
-          expect(server.requests.length).to.equal(1)
-          expect(server.requests[0].readyState).to.equal(1)
-          expect(server.requests[0].url).to.equal('/url0')
+          const numbRequests = chunks.length
+          expect(server.requests.length).to.equal(numbRequests)
+          for (let i = 0; i < numbRequests; i++) {
+            expect(server.requests[i].readyState).to.equal(1)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
 
           pause()
 
-          expect(server.requests.length).to.equal(1)
-          expect(server.requests[0].readyState).to.equal(0)
-          expect(server.requests[0].url).to.equal('/url0')
+          expect(server.requests.length).to.equal(numbRequests)
+          for (let i = 0; i < numbRequests; i++) {
+            expect(server.requests[i].readyState).to.equal(0)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
 
           resume()
 
-          expect(server.requests.length).to.equal(2)
-          expect(server.requests[0].readyState).to.equal(0)
-          expect(server.requests[0].url).to.equal('/url0')
-
-          expect(server.requests[1].readyState).to.equal(1)
-          expect(server.requests[1].url).to.equal('/url0')
-
+          expect(server.requests.length).to.equal(numbRequests * 2)
+          for (let i = 0; i < numbRequests; i++) {
+            expect(server.requests[i].readyState).to.equal(0)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
 
           server.respondImmediately = true
           server.respond()
 
-          expect(server.requests.length).to.equal(2)
-          expect(server.requests[0].readyState).to.equal(0)
-          expect(server.requests[0].url).to.equal('/url0')
-
-          expect(server.requests[1].readyState).to.equal(4)
-          expect(server.requests[1].url).to.equal('/url0')
+          expect(server.requests.length).to.equal(numbRequests * 2)
+          for (let i = 0; i < numbRequests; i++) {
+            expect(server.requests[i].readyState).to.equal(0)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
+          for (let i = numbRequests; i < numbRequests; i++) {
+            expect(server.requests[numbRequests + i].readyState).to.equal(4)
+            expect(server.requests[numbRequests + i].status).to.equal(200)
+            expect(server.requests[numbRequests + i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
         })
 
         it('should be able to retry after error', () => {
-          const onSuccess = sinon.spy()
-          const onError = sinon.spy()
-
           const { start, retry } = chunkUpload(file, config)
           start()
 
           server.requests[0].respond(404)
 
-          expect(server.requests.length).to.equal(1)
+          const numbRequests = chunks.length
+          expect(server.requests.length).to.equal(numbRequests)
+
           expect(server.requests[0].readyState).to.equal(4)
           expect(server.requests[0].status).to.equal(404)
           expect(server.requests[0].url).to.equal(config.getChunkUrl(fileMeta, 0))
-          expect(onSuccess).not.to.be.called
+          for (let i = 1; i < numbRequests; i++) {
+            expect(server.requests[i].readyState).to.equal(0)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
 
           server.respondImmediately = true
           server.respond()
 
           retry()
 
-          expect(server.requests.length).to.equal(2)
-          for(let i = 5; i < server.requests.length; i++) {
-            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i - 5))
-            expect(server.requests[i].status).to.equal(200)
-            expect(server.requests[i].readyState).to.equal(4)
+          expect(server.requests.length).to.equal(numbRequests * 2)
+          for(let i = 0; i < numbRequests; i++) {
+            expect(server.requests[numbRequests + i].url).to.equal(config.getChunkUrl(fileMeta, i))
+            expect(server.requests[numbRequests + i].status).to.equal(200)
+            expect(server.requests[numbRequests + i].readyState).to.equal(4)
           }
         })
-
       }
 
-      if (chunks.length > 1) {
+      if (chunks.length > 3) {
 
         it('should pause and resume chunk upload', () => {
-          const onSuccess = sinon.spy()
           const { start, pause, resume } = chunkUpload(file, config)
           start()
 
-          expect(server.requests.length).to.equal(3)
-          expect(server.requests[0].readyState).to.equal(1)
-          expect(server.requests[0].url).to.equal('/url0')
-          expect(server.requests[1].readyState).to.equal(1)
-          expect(server.requests[1].url).to.equal('/url1')
-          expect(server.requests[2].readyState).to.equal(1)
-          expect(server.requests[2].url).to.equal('/url2')
+          expect(server.requests.length).to.equal(Math.min(3, chunks.length))
+          for (let i = 0; i < 3; i++) {
+            expect(server.requests[i].readyState).to.equal(1)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
 
           server.requests[0].respond()
 
           expect(server.requests.length).to.equal(4)
           expect(server.requests[0].readyState).to.equal(4)
           expect(server.requests[0].url).to.equal('/url0')
-          expect(server.requests[1].readyState).to.equal(1)
-          expect(server.requests[1].url).to.equal('/url1')
-          expect(server.requests[2].readyState).to.equal(1)
-          expect(server.requests[2].url).to.equal('/url2')
-          expect(server.requests[3].readyState).to.equal(1)
-          expect(server.requests[3].url).to.equal('/url3')
+          for (let i = 1; i < 4; i++) {
+            expect(server.requests[i].readyState).to.equal(1)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
 
           pause()
 
           expect(server.requests.length).to.equal(4)
           expect(server.requests[0].readyState).to.equal(4)
           expect(server.requests[0].url).to.equal('/url0')
-          expect(server.requests[1].readyState).to.equal(0)
-          expect(server.requests[1].url).to.equal('/url1')
-          expect(server.requests[2].readyState).to.equal(0)
-          expect(server.requests[2].url).to.equal('/url2')
-          expect(server.requests[3].readyState).to.equal(0)
-          expect(server.requests[3].url).to.equal('/url3')
+          for (let i = 1; i < 4; i++) {
+            expect(server.requests[i].readyState).to.equal(0)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
 
           resume()
 
           expect(server.requests.length).to.equal(7)
           expect(server.requests[0].readyState).to.equal(4)
           expect(server.requests[0].url).to.equal('/url0')
-          expect(server.requests[1].readyState).to.equal(0)
-          expect(server.requests[1].url).to.equal('/url1')
-          expect(server.requests[2].readyState).to.equal(0)
-          expect(server.requests[2].url).to.equal('/url2')
-          expect(server.requests[3].readyState).to.equal(0)
-          expect(server.requests[3].url).to.equal('/url3')
-
-          expect(server.requests[4].readyState).to.equal(1)
-          expect(server.requests[4].url).to.equal('/url1')
-          expect(server.requests[5].readyState).to.equal(1)
-          expect(server.requests[5].url).to.equal('/url2')
-          expect(server.requests[6].readyState).to.equal(1)
-          expect(server.requests[6].url).to.equal('/url3')
+          for (let i = 1; i < 4; i++) {
+            expect(server.requests[i].readyState).to.equal(0)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
+          for (let i = 1; i < 4; i++) {
+            expect(server.requests[i + 3].readyState).to.equal(1)
+            expect(server.requests[i + 3].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
 
           server.respondImmediately = true
           server.respond()
 
-          expect(server.requests.length).to.equal(13)
+          expect(server.requests.length).to.equal(chunks.length + 3)
           expect(server.requests[0].readyState).to.equal(4)
-          expect(server.requests[0].url).to.equal('/url0')
-          expect(server.requests[1].readyState).to.equal(0)
-          expect(server.requests[1].url).to.equal('/url1')
-          expect(server.requests[2].readyState).to.equal(0)
-          expect(server.requests[2].url).to.equal('/url2')
-          expect(server.requests[3].readyState).to.equal(0)
-          expect(server.requests[3].url).to.equal('/url3')
-          for (let i = 4; i < server.requests.length; i++) {
-            expect(server.requests[i].readyState).to.equal(4)
-            expect(server.requests[i].url).to.equal('/url' + (i - 3))
+          for (let i = 1; i < 4; i++) {
+            expect(server.requests[i].readyState).to.equal(0)
+            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
+          }
+          for (let i = 1; i < chunks.length; i++) {
+            expect(server.requests[i + 3].readyState).to.equal(4)
+            expect(server.requests[i + 3].url).to.equal(config.getChunkUrl(fileMeta, i))
           }
         })
 
         it('should be able to retry after 3 errors', () => {
-          const onSuccess = sinon.spy()
-          const onError = sinon.spy()
-
           const { start, retry } = chunkUpload(file, config)
           start()
 
@@ -338,35 +320,21 @@ chunkTests.forEach((chunks) => {
             expect(server.requests[i].readyState).to.equal(0)
             expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
           }
-          expect(onSuccess).not.to.be.called
 
           server.respondImmediately = true
           server.respond()
 
           retry()
 
-          expect(server.requests.length).to.equal(15)
-          for(let i = 5; i < server.requests.length; i++) {
-            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i - 5))
-            expect(server.requests[i].status).to.equal(200)
-            expect(server.requests[i].readyState).to.equal(4)
+          expect(server.requests.length).to.equal(chunks.length + 5)
+          for(let i = 0; i < chunks.length; i++) {
+            expect(server.requests[i + 5].url).to.equal(config.getChunkUrl(fileMeta, i))
+            expect(server.requests[i + 5].status).to.equal(200)
+            expect(server.requests[i + 5].readyState).to.equal(4)
           }
         })
 
       }
-
-      it.skip('should call onError when upload completes but some of the chunk errors', () => {
-        const onError = sinon.spy()
-        const onSuccess = sinon.spy()
-
-        const { start } = chunkUpload(file, config)
-
-        server.respondImmediately = true
-        server.requests[0].respond(400)
-        server.respond()
-
-        expect(onSuccess).not.to.be.called
-      })
 
       it.skip('should timeout requests', () => {
       })
