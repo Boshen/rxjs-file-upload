@@ -106,7 +106,7 @@ chunkTests.forEach((chunks) => {
 
     })
 
-    describe('onProgress', () => {
+    describe('on progress', () => {
 
       it('should report progress', () => {
         const progress = sinon.spy()
@@ -116,15 +116,34 @@ chunkTests.forEach((chunks) => {
 
         progress$.subscribe(progress)
 
+        const chunkTotal = fileMeta.fileSize / chunks.length
         server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
-        server.requests[1].upload.onprogress({ loaded: 100, total: fileMeta.fileSize })
-        server.requests[1].upload.onprogress({ loaded: 200, total: fileMeta.fileSize })
+        server.requests[1].upload.onprogress({ loaded: 1, total: chunkTotal })
+        server.requests[1].upload.onprogress({ loaded: 2, total: chunkTotal })
+        server.requests[1].upload.onprogress({ loaded: chunkTotal, total: chunkTotal })
+        server.requests[1].respond(200)
+        if (chunks.length > 1) {
+          server.requests[2].upload.onprogress({ loaded: 2, total: chunkTotal })
+          server.requests[2].upload.onprogress({ loaded: 3, total: chunkTotal })
+          server.requests[2].upload.onprogress({ loaded: chunkTotal, total: chunkTotal })
+          server.requests[2].respond(200)
+        }
         server.respondImmediately = true
         server.respond()
 
-        progress.calledTwice
-        progress.firstCall.calledWith(100 / fileMeta.fileSize)
-        progress.secondCall.calledWith(100 / fileMeta.fileSize)
+        if (chunks.length > 1) {
+          expect(progress.callCount).to.equal(6)
+        } else {
+          expect(progress.callCount).to.equal(3)
+        }
+        expect(progress.getCall(0).args[0]).to.equal(1 / fileMeta.fileSize)
+        expect(progress.getCall(1).args[0]).to.equal(2 / fileMeta.fileSize)
+        expect(progress.getCall(2).args[0]).to.equal(chunkTotal / fileMeta.fileSize)
+        if (chunks.length > 1) {
+          expect(progress.getCall(3).args[0]).to.equal((chunkTotal + 2) / fileMeta.fileSize)
+          expect(progress.getCall(4).args[0]).to.equal((chunkTotal + 3) / fileMeta.fileSize)
+          expect(progress.getCall(5).args[0]).to.equal(chunkTotal * 2 / fileMeta.fileSize)
+        }
       })
 
     })

@@ -138,7 +138,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
   const resume$ = new Subject()
   const retry$ = new Subject()
   const abort$ = new Subject()
-  const progress$ = new Subject()
+  const progress$ = new Subject<number>()
 
   const upload$ = startChunkUpload(file, config)
     .concatMap((fileMeta: FileMeta) => {
