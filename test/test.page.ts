@@ -60,7 +60,7 @@ const handleUpload = (files$) => {
     })
     .subscribe(
       (buttons) => {
-        const { start, abort, pause, resume, retry, progress$ } = buttons
+        const { start, abort, pause, resume, retry, progress$, complete$} = buttons
         start()
         Observable.fromEvent(document.getElementById('abort'), 'click')
           .subscribe(abort)
@@ -72,6 +72,9 @@ const handleUpload = (files$) => {
           .subscribe(retry)
         progress$.subscribe((p: number) => {
           (<HTMLProgressElement>document.getElementById('progress')).value = Math.round(p * 100)
+        })
+        complete$.subscribe((fileMeta) => {
+          console.info('complete: ', fileMeta)
         })
       },
       console.error.bind(console),

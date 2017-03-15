@@ -51,7 +51,7 @@ chunkTests.forEach((chunks) => {
         server.respondWith('POST', chunkUrl, [200, {}, ''])
       })
       server.respondWith('POST', config.getChunkStartUrl(), [200, {}, JSON.stringify(fileMeta)])
-      server.respondWith('POST', config.getChunkFinishUrl(fileMeta), [200, {}, ''])
+      server.respondWith('POST', config.getChunkFinishUrl(fileMeta), [200, {}, JSON.stringify(fileMeta)])
     })
 
     afterEach(() => {
@@ -144,6 +144,25 @@ chunkTests.forEach((chunks) => {
           expect(progress.getCall(4).args[0]).to.equal((chunkTotal + 3) / fileMeta.fileSize)
           expect(progress.getCall(5).args[0]).to.equal(chunkTotal * 2 / fileMeta.fileSize)
         }
+      })
+
+    })
+
+    describe('on complete', () => {
+
+      it('should send completed fileMeta', () => {
+        const complete = sinon.spy()
+
+        const { start, complete$ } = chunkUpload(file, config)
+        start()
+
+        complete$.subscribe(complete)
+
+        server.respondImmediately = true
+        server.respond()
+
+        expect(complete).calledOnce
+        expect(complete.getCall(0).args[0]).to.eql(fileMeta)
       })
 
     })

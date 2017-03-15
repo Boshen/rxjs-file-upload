@@ -139,6 +139,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
   const retry$ = new Subject()
   const abort$ = new Subject()
   const progress$ = new Subject<number>()
+  const complete$ = new Subject<FileMeta>()
 
   const upload$ = startChunkUpload(file, config)
     .concatMap((fileMeta: FileMeta) => {
@@ -154,7 +155,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
     .retryWhen(() => retry$)
     .takeUntil(abort$)
 
-  const start = () => { upload$.subscribe() }
+  const start = () => { upload$.subscribe(complete$.next.bind(complete$)) }
   const pause = () => { pause$.next() }
   const resume = () => { resume$.next() }
   const retry = () => { retry$.next() }
@@ -167,6 +168,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
     retry,
     abort,
 
-    progress$
+    progress$,
+    complete$
   }
 }
