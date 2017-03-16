@@ -94,7 +94,7 @@ export const uploadAllChunks = (
 ) => {
 
   const chunkRequests$ = chunks.map((chunk, i) => {
-    let completed = false
+    let completed = fileMeta.uploadedChunks.indexOf(i) >= 0
     return Observable.defer(() => {
       if (completed) {
         return Observable.empty()

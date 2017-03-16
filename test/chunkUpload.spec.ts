@@ -38,7 +38,8 @@ chunkTests.forEach((chunks) => {
     fileSize: file.size,
     fileKey: 'fileKey',
     chunks: chunks.length,
-    chunkSize: file.size / chunks.length
+    chunkSize: file.size / chunks.length,
+    uploadedChunks: []
   }
 
   describe(`chunkUpload ${chunks.length} chunks`, () => {
@@ -170,7 +171,7 @@ chunkTests.forEach((chunks) => {
       let startChunkUploadStub
       let finishChunkUploadStub
 
-      before(() => {
+      beforeEach(() => {
         const chunkUploadModule = require('../src/chunkUpload')
         startChunkUploadStub = sinon.stub(chunkUploadModule, 'startChunkUpload')
         startChunkUploadStub.returns(Observable.of(fileMeta))
@@ -178,7 +179,7 @@ chunkTests.forEach((chunks) => {
         finishChunkUploadStub.returns(Observable.empty())
       })
 
-      after(() => {
+      afterEach(() => {
         startChunkUploadStub.restore()
         finishChunkUploadStub.restore()
       })
@@ -414,6 +415,26 @@ chunkTests.forEach((chunks) => {
           } else {
             expect(server.requests.length).to.equal(chunks.length + 3)
           }
+      })
+
+      it('should not upload already uploaded chunks', () => {
+          const uploadedFileMeta = {
+            ...fileMeta,
+            uploadedChunks: [0]
+          }
+          startChunkUploadStub.returns(Observable.of(uploadedFileMeta))
+
+          const { start, pause, resume, retry } = chunkUpload(file, config)
+          start()
+
+          server.respondImmediately = true
+          server.respond()
+
+          expect(server.requests.length).to.equal(chunks.length - 1)
+          server.requests.forEach((r, i) => {
+            expect(r.url).to.equal(config.getChunkUrl(fileMeta, i + 1))
+            expect(r.status).to.equal(200)
+          })
       })
 
       it.skip('should timeout requests', () => {
