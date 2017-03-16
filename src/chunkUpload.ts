@@ -21,6 +21,7 @@ import 'rxjs/add/operator/takeUntil'
 import 'rxjs/add/operator/take'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/scan'
+import 'rxjs/add/operator/publishReplay'
 
 import { post } from './post'
 
@@ -65,6 +66,11 @@ interface ChunkStatus {
   index: string
 }
 
+export interface ChunkProgress {
+  i: number
+  loaded: number
+}
+
 export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[] => {
   const result: Blob[] = []
   for (let i = 0; i < chunks; i ++) {
@@ -100,11 +106,6 @@ export const finishChunkUpload = (fileMeta: FileMeta, config: UploadChunksConfig
     url: finishUrl,
     headers: config.headers
   })
-}
-
-interface ChunkProgress {
-  i: number
-  loaded: number
 }
 
 const errors = {
@@ -156,28 +157,26 @@ export const uploadAllChunks = (
     })
 }
 
-export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
-  const completeSubject = new Subject<FileMeta>()
-  const complete$ = completeSubject.take(1)
+const createControlSubjects = () => {
+  return {
+    retrySubject: new Subject<void>(),
+    abortSubject: new Subject<void>(),
+    progressSubject: new Subject<ChunkProgress>(),
+    controlSubject: new Subject<boolean>()
+  }
+}
 
-  const createSubject = new Subject<FileMeta>()
-  const retrySubject = new Subject<void>()
-  const abortSubject = new Subject<void>()
-  const progressSubject = new Subject<ChunkProgress>()
-  const errorSubject = new Subject<Error>()
+export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubjects = createControlSubjects()) => {
 
-  const controlSubject = new Subject<boolean>()
+  const { retrySubject, abortSubject, progressSubject, controlSubject } = controlSubjects
+
   const control$ = controlSubject.distinctUntilChanged()
-  const pause$ = control$.filter((b) => b).takeUntil(complete$)
-  const resume$ = control$.filter((b) => !b).takeUntil(complete$)
+  const pause$ = control$.filter((b) => b)
+  const resume$ = control$.filter((b) => !b)
 
-  const create$ = createSubject.take(1)
-  const abort$ = abortSubject.take(1)
-  const retry$ = retrySubject.takeUntil(complete$)
-  const error$ = errorSubject.take(1)
+  const create$ = startChunkUpload(file, config).publishReplay(1).refCount()
 
-  const upload$ = startChunkUpload(file, config)
-    .do(createSubject.next.bind(createSubject))
+  const upload$ = create$
     .concatMap((fileMeta: FileMeta) => {
       const chunks = sliceFile(file, fileMeta.chunks, fileMeta.chunkSize)
       return uploadAllChunks(chunks, fileMeta, progressSubject, config)
@@ -191,20 +190,25 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
     .retryWhen((e$) => {
       return e$.concatMap((e: Error) => {
         if (e.message === errors.Multiple_Chunk_Upload_Error) {
-          return retry$
+          return retrySubject
         } else {
           return Observable.throw(e)
         }
       })
     })
-    .takeUntil(abort$)
+    .takeUntil(abortSubject)
+    .take(1)
+    .publishReplay(1)
+    .refCount()
 
-  const start = () => {
-    upload$.subscribe(
-      completeSubject.next.bind(completeSubject),
-      errorSubject.next.bind(errorSubject)
-    )
+  const cleanUp = () => {
+    retrySubject.unsubscribe()
+    abortSubject.unsubscribe()
+    progressSubject.unsubscribe()
+    controlSubject.unsubscribe()
   }
+
+  const start = () => { upload$.subscribe(cleanUp, cleanUp) }
   const pause = () => { controlSubject.next(true) }
   const resume = () => { controlSubject.next(false) }
   const retry = () => { retrySubject.next() }
@@ -220,7 +224,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
       return Object.keys(acc).reduce((t, i) => t + acc[i], 0) / fileMeta.fileSize
     })
     .distinctUntilChanged((x, y) => x > y)
-    .takeUntil(complete$)
+    .takeUntil(upload$)
 
   return {
     start,
@@ -231,7 +235,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
 
     create$,
     progress$,
-    complete$,
-    error$
+    complete$: upload$,
+    error$: upload$.catch((e) => Observable.of(e))
   }
 }

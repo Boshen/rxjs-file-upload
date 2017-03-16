@@ -7,13 +7,15 @@ chai.use(sinonChai)
 const expect = chai.expect
 
 import { Observable } from 'rxjs/Observable'
+import { Subject } from 'rxjs/Subject'
 import { createMockFile } from './util'
 
 import {
   startChunkUpload,
   finishChunkUpload,
   chunkUpload,
-  uploadAllChunks
+  uploadAllChunks,
+  ChunkProgress
 } from '../src/chunkUpload'
 
 const config = {
@@ -76,6 +78,43 @@ chunkTests.forEach((chunks) => {
       }
       expect(server.requests[chunks.length + 1].url).to.equal(config.getChunkFinishUrl(fileMeta))
       expect(server.requests[chunks.length + 1].status).to.equal(200)
+
+    })
+
+    describe('memory', () => {
+
+      it('should not leak when complete', () => {
+        const controlSubjects = {
+          retrySubject: new Subject<void>(),
+          abortSubject: new Subject<void>(),
+          progressSubject: new Subject<ChunkProgress>(),
+          controlSubject: new Subject<boolean>()
+        }
+        const { start } = chunkUpload(file, config, controlSubjects)
+        start()
+        server.respondImmediately = true
+        server.respond()
+        for (let subject in controlSubjects) {
+          expect(controlSubjects[subject].isStopped).to.equal(true)
+          expect(controlSubjects[subject].closed).to.equal(true)
+        }
+      })
+
+      it('should not leak when error', () => {
+        const controlSubjects = {
+          retrySubject: new Subject<void>(),
+          abortSubject: new Subject<void>(),
+          progressSubject: new Subject<ChunkProgress>(),
+          controlSubject: new Subject<boolean>()
+        }
+        const { start } = chunkUpload(file, config, controlSubjects)
+        start()
+        server.requests[0].respond(401)
+        for (let subject in controlSubjects) {
+          expect(controlSubjects[subject].isStopped).to.equal(true)
+          expect(controlSubjects[subject].closed).to.equal(true)
+        }
+      })
 
     })
 
@@ -232,7 +271,9 @@ chunkTests.forEach((chunks) => {
         server.respondImmediately = true
         server.requests[0].respond(401)
 
-        retry()
+        expect(() => {
+          retry()
+        }).to.throw()
 
         expect(server.requests.length).to.equal(1)
         expect(error).calledOnce
