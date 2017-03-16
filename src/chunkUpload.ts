@@ -17,6 +17,8 @@ import 'rxjs/add/operator/retryWhen'
 import 'rxjs/add/operator/single'
 import 'rxjs/add/operator/takeUntil'
 import 'rxjs/add/operator/take'
+import 'rxjs/add/operator/combineLatest'
+import 'rxjs/add/operator/scan'
 
 import { post } from './post'
 
@@ -86,10 +88,15 @@ export const finishChunkUpload = (fileMeta: FileMeta, config: UploadChunksConfig
   return post(finishUrl, null, config.headers)
 }
 
+interface ChunkProgress {
+  i: number
+  loaded: number
+}
+
 export const uploadAllChunks = (
   chunks: Blob[],
   fileMeta: FileMeta,
-  progressSubject: Subject<number>,
+  progressSubject: Subject<ChunkProgress>,
   config: UploadChunksConfig
 ) => {
 
@@ -102,7 +109,9 @@ export const uploadAllChunks = (
       return post(config.getChunkUrl(fileMeta, i), chunk, {
           ...config.headers,
           ...{ 'Content-Type': 'application/octet-stream;charset=utf-8' }
-      })
+      }, Subscriber.create((pe: ProgressEvent) => {
+        progressSubject.next({ i, loaded: pe.loaded })
+      }, () => {})) // tslint:disable-line
         .do(() => completed = true)
         .map(() => ({ completed: true, index: i }))
         .catch(() => Observable.of({ completed: false, index: i }))
@@ -121,10 +130,6 @@ export const uploadAllChunks = (
         return Observable.of(acc)
       }
     }, { completes: {}, errors: {} })
-    .do((acc) => {
-      const completes = Object.keys(acc.completes).length
-      progressSubject.next(completes * fileMeta.chunkSize / fileMeta.fileSize)
-    })
     .single((acc) => {
       return Object.keys(acc.completes).length === chunks.length
     })
@@ -137,7 +142,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
   const createSubject = new Subject<FileMeta>()
   const retrySubject = new Subject<void>()
   const abortSubject = new Subject<void>()
-  const progressSubject = new Subject<number>()
+  const progressSubject = new Subject<ChunkProgress>()
 
   const controlSubject = new Subject<boolean>()
   const control$ = controlSubject.distinctUntilChanged()
@@ -145,7 +150,6 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
   const resume$ = control$.filter((b) => !b).takeUntil(complete$)
 
   const create$ = createSubject.take(1)
-  const progress$ = progressSubject.takeUntil(complete$)
   const abort$ = abortSubject.take(1)
   const retry$ = retrySubject.takeUntil(complete$)
 
@@ -174,6 +178,18 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
   const resume = () => { controlSubject.next(false) }
   const retry = () => { retrySubject.next() }
   const abort = () => { abortSubject.next() }
+
+  const progress$ = progressSubject
+    .scan((acc, chunkProgress: ChunkProgress) => {
+      acc[chunkProgress.i] = chunkProgress.loaded
+      return acc
+    }, {})
+    .combineLatest(create$)
+    .map(([acc, fileMeta]) => {
+      return Object.keys(acc).reduce((t, i) => t + acc[i], 0) / fileMeta.fileSize
+    })
+    .distinctUntilChanged((x, y) => x > y)
+    .takeUntil(complete$)
 
   return {
     start,
