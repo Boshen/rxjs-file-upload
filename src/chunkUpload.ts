@@ -75,15 +75,20 @@ export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[]
 }
 
 export const startChunkUpload = (file: Blob, config: UploadChunksConfig) => {
-  return post({
-    url: config.getChunkStartUrl(),
-    body: {
-      fileMD5: new Date().toString(),
-      fileName: file['name'], // tslint:disable-line
-      fileSize: file['size'], // tslint:disable-line
-      lastUpdated: file['lastModifiedDate'] // tslint:disable-line
-    },
-    headers: config.headers
+  let cache
+  return Observable.defer(() => {
+    return cache ? Observable.of(cache) : post({
+      url: config.getChunkStartUrl(),
+      body: {
+        fileName: file['name'], // tslint:disable-line
+        fileSize: file['size'], // tslint:disable-line
+        lastUpdated: file['lastModifiedDate'] // tslint:disable-line
+      },
+      headers: config.headers
+    })
+    .do((fileMeta: FileMeta) => {
+      cache = fileMeta
+    })
   })
 }
 
@@ -175,8 +180,8 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
     .concatMap((fileMeta: FileMeta) => {
       return finishChunkUpload(fileMeta, config)
     })
-    .retryWhen(() => retrySubject)
-    .takeUntil(abortSubject)
+    .retryWhen(() => retry$)
+    .takeUntil(abort$)
 
   const start = () => {
     upload$.subscribe(

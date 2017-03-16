@@ -88,11 +88,19 @@ chunkTests.forEach((chunks) => {
         const requestBody = JSON.parse(request.requestBody)
         expect(request.url).to.equal(config.getChunkStartUrl())
         expect(request.status).to.equal(200)
-        expect(requestBody).to.have.all.keys('fileMD5', 'fileName', 'fileSize', 'lastUpdated')
-        expect(requestBody.fileMD5).to.be.a('string')
+        expect(requestBody).to.have.all.keys('fileName', 'fileSize', 'lastUpdated')
         expect(requestBody.fileName).to.equal(file['name'])
         expect(requestBody.fileSize).to.equal(file['size'])
         expect(requestBody.lastUpdated).to.equal(file['lastModifiedDate'])
+      })
+
+      it('should cache', () => {
+        const s$ = startChunkUpload(file, config)
+        s$.subscribe()
+        server.respond()
+        s$.subscribe()
+        server.respond()
+        expect(server.requests.length).to.equal(1)
       })
 
     })
