@@ -3,20 +3,19 @@ import { Subject } from 'rxjs/Subject'
 import { Subscriber } from 'rxjs/Subscriber'
 
 import 'rxjs/add/observable/defer'
-import 'rxjs/add/observable/dom/ajax'
 import 'rxjs/add/observable/empty'
 import 'rxjs/add/observable/from'
 import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/catch'
+import 'rxjs/add/operator/distinctUntilChanged'
+import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/mapTo'
 import 'rxjs/add/operator/mergeAll'
-import 'rxjs/add/operator/mergeMap'
+import 'rxjs/add/operator/mergeScan'
 import 'rxjs/add/operator/repeatWhen'
 import 'rxjs/add/operator/retryWhen'
-import 'rxjs/add/operator/scan'
-import 'rxjs/add/operator/takeLast'
-import 'rxjs/add/operator/takeUntil'
 import 'rxjs/add/operator/single'
+import 'rxjs/add/operator/takeUntil'
 
 import { post } from './post'
 
@@ -119,14 +118,15 @@ export const uploadAllChunks = (
 
   return Observable.from(chunkRequests$)
     .mergeAll(3)
-    .scan((acc, x: ChunkStatus) => {
+    .mergeScan((acc, x: ChunkStatus) => {
       acc[x.completed ? 'completes' : 'errors'][x.index] = true
       const errorsCount = Object.keys(acc.errors).length
       if (errorsCount >= (chunks.length > 3 ? 3 : 1)) {
         acc.errors = {}
-        throw new Error()
+        return Observable.throw('Multiple Chunk Halt Error')
+      } else {
+        return Observable.of(acc)
       }
-      return acc
     }, { completes: {}, errors: {} })
     .single((acc) => {
       return Object.keys(acc.completes).length === chunks.length
@@ -134,19 +134,23 @@ export const uploadAllChunks = (
 }
 
 export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
-  const pause$ = new Subject()
-  const resume$ = new Subject()
-  const retry$ = new Subject()
-  const abort$ = new Subject()
+  const control$ = new Subject<boolean>()
+  const s$ = control$.distinctUntilChanged()
+  const pause$ = s$.filter((b) => b)
+  const resume$ = s$.filter((b) => !b)
+
+  const retry$ = new Subject<void>()
+  const abort$ = new Subject<void>()
   const progress$ = new Subject<number>()
   const complete$ = new Subject<FileMeta>()
 
   const upload$ = startChunkUpload(file, config)
     .concatMap((fileMeta: FileMeta) => {
-      const blobs = sliceFile(file, fileMeta.chunks, fileMeta.chunkSize)
-      return uploadAllChunks(blobs, fileMeta, progress$, config)
+      const chunks = sliceFile(file, fileMeta.chunks, fileMeta.chunkSize)
+      return uploadAllChunks(chunks, fileMeta, progress$, config)
         .takeUntil(pause$)
         .repeatWhen(() => resume$)
+        .takeUntil(complete$)
         .mapTo(fileMeta)
     })
     .concatMap((fileMeta: FileMeta) => {
@@ -155,9 +159,14 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
     .retryWhen(() => retry$)
     .takeUntil(abort$)
 
-  const start = () => { upload$.subscribe(complete$.next.bind(complete$)) }
-  const pause = () => { pause$.next() }
-  const resume = () => { resume$.next() }
+  const start = () => {
+    upload$.subscribe(
+      complete$.next.bind(complete$),
+      console.error.bind(console)
+    )
+  }
+  const pause = () => { control$.next(true) }
+  const resume = () => { control$.next(false) }
   const retry = () => { retry$.next() }
   const abort = () => { abort$.next() }
 

@@ -228,6 +228,7 @@ chunkTests.forEach((chunks) => {
 
           pause()
 
+
           expect(server.requests.length).to.equal(numbRequests)
           for (let i = 0; i < numbRequests; i++) {
             expect(server.requests[i].readyState).to.equal(0)
@@ -382,6 +383,40 @@ chunkTests.forEach((chunks) => {
         })
 
       }
+
+      it('should not pause, resume or retry after completion', () => {
+          const { start, pause, resume, retry } = chunkUpload(file, config)
+          start()
+
+          pause()
+          pause()
+          pause()
+
+          resume()
+          resume()
+          resume()
+
+          server.respondImmediately = true
+          server.respond()
+
+          pause()
+          pause()
+          pause()
+
+          resume()
+          resume()
+          resume()
+
+          retry()
+          retry()
+          retry()
+
+          if (chunks.length < 3) {
+            expect(server.requests.length).to.equal(chunks.length * 2)
+          } else {
+            expect(server.requests.length).to.equal(chunks.length + 3)
+          }
+      })
 
       it.skip('should timeout requests', () => {
       })
