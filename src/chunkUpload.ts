@@ -16,6 +16,7 @@ import 'rxjs/add/operator/repeatWhen'
 import 'rxjs/add/operator/retryWhen'
 import 'rxjs/add/operator/single'
 import 'rxjs/add/operator/takeUntil'
+import 'rxjs/add/operator/take'
 
 import { post } from './post'
 
@@ -88,7 +89,7 @@ export const finishChunkUpload = (fileMeta: FileMeta, config: UploadChunksConfig
 export const uploadAllChunks = (
   chunks: Blob[],
   fileMeta: FileMeta,
-  progress$: Subject<number>,
+  progressSubject: Subject<number>,
   config: UploadChunksConfig
 ) => {
 
@@ -122,7 +123,7 @@ export const uploadAllChunks = (
     }, { completes: {}, errors: {} })
     .do((acc) => {
       const completes = Object.keys(acc.completes).length
-      progress$.next(completes * fileMeta.chunkSize / fileMeta.fileSize)
+      progressSubject.next(completes * fileMeta.chunkSize / fileMeta.fileSize)
     })
     .single((acc) => {
       return Object.keys(acc.completes).length === chunks.length
@@ -130,43 +131,49 @@ export const uploadAllChunks = (
 }
 
 export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
-  const control$ = new Subject<boolean>()
-  const s$ = control$.distinctUntilChanged()
-  const pause$ = s$.filter((b) => b)
-  const resume$ = s$.filter((b) => !b)
+  const completeSubject = new Subject<FileMeta>()
+  const complete$ = completeSubject.take(1)
 
-  const create$ = new Subject<FileMeta>()
-  const retry$ = new Subject<void>()
-  const abort$ = new Subject<void>()
-  const progress$ = new Subject<number>()
-  const complete$ = new Subject<FileMeta>()
+  const createSubject = new Subject<FileMeta>()
+  const retrySubject = new Subject<void>()
+  const abortSubject = new Subject<void>()
+  const progressSubject = new Subject<number>()
+
+  const controlSubject = new Subject<boolean>()
+  const control$ = controlSubject.distinctUntilChanged()
+  const pause$ = control$.filter((b) => b).takeUntil(complete$)
+  const resume$ = control$.filter((b) => !b).takeUntil(complete$)
+
+  const create$ = createSubject.take(1)
+  const progress$ = progressSubject.takeUntil(complete$)
+  const abort$ = abortSubject.take(1)
+  const retry$ = retrySubject.takeUntil(complete$)
 
   const upload$ = startChunkUpload(file, config)
-    .do(create$.next.bind(create$))
+    .do(createSubject.next.bind(createSubject))
     .concatMap((fileMeta: FileMeta) => {
       const chunks = sliceFile(file, fileMeta.chunks, fileMeta.chunkSize)
-      return uploadAllChunks(chunks, fileMeta, progress$, config)
+      return uploadAllChunks(chunks, fileMeta, progressSubject, config)
         .takeUntil(pause$)
         .repeatWhen(() => resume$)
-        .takeUntil(complete$)
         .mapTo(fileMeta)
     })
     .concatMap((fileMeta: FileMeta) => {
       return finishChunkUpload(fileMeta, config)
     })
-    .retryWhen(() => retry$)
-    .takeUntil(abort$)
+    .retryWhen(() => retrySubject)
+    .takeUntil(abortSubject)
 
   const start = () => {
     upload$.subscribe(
-      complete$.next.bind(complete$),
+      completeSubject.next.bind(completeSubject),
       console.error.bind(console)
     )
   }
-  const pause = () => { control$.next(true) }
-  const resume = () => { control$.next(false) }
-  const retry = () => { retry$.next() }
-  const abort = () => { abort$.next() }
+  const pause = () => { controlSubject.next(true) }
+  const resume = () => { controlSubject.next(false) }
+  const retry = () => { retrySubject.next() }
+  const abort = () => { abortSubject.next() }
 
   return {
     start,
