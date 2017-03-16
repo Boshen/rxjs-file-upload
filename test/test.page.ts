@@ -70,11 +70,17 @@ const handleUpload = (files$) => {
           .subscribe(resume)
         Observable.fromEvent(document.getElementById('retry'), 'click')
           .subscribe(retry)
+        create$.subscribe((fileMeta) => {
+          console.info('create: ', fileMeta)
+        })
         progress$.subscribe((p: number) => {
           (<HTMLProgressElement>document.getElementById('progress')).value = Math.round(p * 100)
         })
         complete$.subscribe((fileMeta) => {
           console.info('complete: ', fileMeta)
+        })
+        error$.subscribe((e) => {
+          console.error('error: ', e)
         })
       },
       console.error.bind(console),

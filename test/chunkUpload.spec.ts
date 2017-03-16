@@ -204,6 +204,43 @@ chunkTests.forEach((chunks) => {
 
     })
 
+    describe('on error', () => {
+
+      it('should error if ajax errors', () => {
+        const error = sinon.spy()
+
+        const { start, error$ } = chunkUpload(file, config)
+        start()
+
+        error$.subscribe(error)
+
+        server.respondImmediately = true
+        server.requests[0].respond(401)
+
+        expect(error).calledOnce
+        expect(error.getCall(0).args[0].status).to.eql(401)
+      })
+
+      it('should not retry after ajax error', () => {
+        const error = sinon.spy()
+
+        const { start, retry, error$ } = chunkUpload(file, config)
+        start()
+
+        error$.subscribe(error)
+
+        server.respondImmediately = true
+        server.requests[0].respond(401)
+
+        retry()
+
+        expect(server.requests.length).to.equal(1)
+        expect(error).calledOnce
+        expect(error.getCall(0).args[0].status).to.eql(401)
+      })
+
+    })
+
     describe('uploadAllChunks', () => {
 
       let startChunkUploadStub
