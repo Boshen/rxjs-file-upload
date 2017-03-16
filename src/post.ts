@@ -5,17 +5,26 @@ import { AjaxRequest, AjaxResponse } from 'rxjs/observable/dom/AjaxObservable'
 import 'rxjs/add/observable/dom/ajax'
 import 'rxjs/add/operator/map'
 
-export const post = (
-  url: string,
-  body: {} = {},
-  headers: {} = {},
-  progressSubscriber: AjaxRequest['progressSubscriber'] = null
-) => {
+interface PostConfig {
+  url: string
+  body?: {}
+  headers?: {}
+  isStream?: boolean
+  progressSubscriber?: AjaxRequest['progressSubscriber']
+}
+
+export const post = ({
+  url,
+  body,
+  headers,
+  isStream = false,
+  progressSubscriber
+}: PostConfig) => {
   return Observable.ajax({
     url,
     body,
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': isStream ? 'application/octet-stream' : 'application/json',
       ...headers
     },
     method: 'POST',

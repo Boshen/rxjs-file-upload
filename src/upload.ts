@@ -27,11 +27,6 @@ export const upload = (config: UploadConfig) => {
     onError = noop
   } = config
 
-  const headers = {
-    ...config.headers,
-    ...{ 'Content-Type': 'application/octet-stream;charset=utf-8' }
-  }
-
   const progressSubscriber = Subscriber.create(
     onProgress,
     noop
@@ -41,12 +36,13 @@ export const upload = (config: UploadConfig) => {
 
   onCreate()
 
-  const subscription = post(
-    config.getUploadUrl(),
+  const subscription = post({
+    url: config.getUploadUrl(),
     body,
-    headers,
+    headers: config.headers,
+    isStream: true,
     progressSubscriber
-  )
+  })
     .do(null, (e) => {
       onError(e)
     })

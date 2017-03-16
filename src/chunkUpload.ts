@@ -75,17 +75,24 @@ export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[]
 }
 
 export const startChunkUpload = (file: Blob, config: UploadChunksConfig) => {
-  return post(config.getChunkStartUrl(), {
-    fileMD5: new Date().toString(),
-    fileName: file['name'], // tslint:disable-line
-    fileSize: file['size'], // tslint:disable-line
-    lastUpdated: file['lastModifiedDate'] // tslint:disable-line
-  }, config.headers)
+  return post({
+    url: config.getChunkStartUrl(),
+    body: {
+      fileMD5: new Date().toString(),
+      fileName: file['name'], // tslint:disable-line
+      fileSize: file['size'], // tslint:disable-line
+      lastUpdated: file['lastModifiedDate'] // tslint:disable-line
+    },
+    headers: config.headers
+  })
 }
 
 export const finishChunkUpload = (fileMeta: FileMeta, config: UploadChunksConfig) => {
   const finishUrl = config.getChunkFinishUrl(fileMeta)
-  return post(finishUrl, null, config.headers)
+  return post({
+    url: finishUrl,
+    headers: config.headers
+  })
 }
 
 interface ChunkProgress {
@@ -106,12 +113,15 @@ export const uploadAllChunks = (
       if (completed) {
         return Observable.empty()
       }
-      return post(config.getChunkUrl(fileMeta, i), chunk, {
-          ...config.headers,
-          ...{ 'Content-Type': 'application/octet-stream;charset=utf-8' }
-      }, Subscriber.create((pe: ProgressEvent) => {
-        progressSubject.next({ i, loaded: pe.loaded })
-      }, () => {})) // tslint:disable-line
+      return post({
+        url: config.getChunkUrl(fileMeta, i),
+        body: chunk,
+        headers: config.headers,
+        isStream: true,
+        progressSubscriber: Subscriber.create((pe: ProgressEvent) => {
+          progressSubject.next({ i, loaded: pe.loaded })
+        }, () => {}) // tslint:disable-line
+      })
         .do(() => completed = true)
         .map(() => ({ completed: true, index: i }))
         .catch(() => Observable.of({ completed: false, index: i }))
