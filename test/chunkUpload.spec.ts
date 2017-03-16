@@ -32,15 +32,16 @@ const chunkTests = [1, 2, 3, 10, 100].map(createChunks)
 
 chunkTests.forEach((chunks) => {
 
+  const file = createMockFile('file', 'test.txt')
+
   const fileMeta: any = {
-    fileSize: 1000,
+    fileSize: file.size,
     fileKey: 'fileKey',
-    chunks: chunks.length
+    chunks: chunks.length,
+    chunkSize: file.size / chunks.length
   }
 
   describe(`chunkUpload ${chunks.length} chunks`, () => {
-
-    const file = createMockFile('file', 'test.txt')
 
     let server
 
@@ -106,6 +107,24 @@ chunkTests.forEach((chunks) => {
 
     })
 
+    describe('on create', () => {
+
+      it('should push fileMeta to create$ after startChunkUpload', () => {
+        const create = sinon.spy()
+
+        const { start, create$ } = chunkUpload(file, config)
+        start()
+
+        create$.subscribe(create)
+
+        server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
+
+        expect(create).calledOnce
+        expect(create.getCall(0).args[0]).to.eql(fileMeta)
+      })
+
+    })
+
     describe('on progress', () => {
 
       it('should report progress', () => {
@@ -116,33 +135,12 @@ chunkTests.forEach((chunks) => {
 
         progress$.subscribe(progress)
 
-        const chunkTotal = fileMeta.fileSize / chunks.length
-        server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
-        server.requests[1].upload.onprogress({ loaded: 1, total: chunkTotal })
-        server.requests[1].upload.onprogress({ loaded: 2, total: chunkTotal })
-        server.requests[1].upload.onprogress({ loaded: chunkTotal, total: chunkTotal })
-        server.requests[1].respond(200)
-        if (chunks.length > 1) {
-          server.requests[2].upload.onprogress({ loaded: 2, total: chunkTotal })
-          server.requests[2].upload.onprogress({ loaded: 3, total: chunkTotal })
-          server.requests[2].upload.onprogress({ loaded: chunkTotal, total: chunkTotal })
-          server.requests[2].respond(200)
-        }
         server.respondImmediately = true
         server.respond()
 
-        if (chunks.length > 1) {
-          expect(progress.callCount).to.equal(6)
-        } else {
-          expect(progress.callCount).to.equal(3)
-        }
-        expect(progress.getCall(0).args[0]).to.equal(1 / fileMeta.fileSize)
-        expect(progress.getCall(1).args[0]).to.equal(2 / fileMeta.fileSize)
-        expect(progress.getCall(2).args[0]).to.equal(chunkTotal / fileMeta.fileSize)
-        if (chunks.length > 1) {
-          expect(progress.getCall(3).args[0]).to.equal((chunkTotal + 2) / fileMeta.fileSize)
-          expect(progress.getCall(4).args[0]).to.equal((chunkTotal + 3) / fileMeta.fileSize)
-          expect(progress.getCall(5).args[0]).to.equal(chunkTotal * 2 / fileMeta.fileSize)
+        expect(progress.callCount).to.equal(chunks.length)
+        for (let i = 0; i < chunks.length; i++) {
+          expect(progress.getCall(i).args[0]).to.equal((i + 1) * fileMeta.chunkSize / fileMeta.fileSize)
         }
       })
 

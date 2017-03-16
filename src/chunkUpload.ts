@@ -91,25 +91,17 @@ export const uploadAllChunks = (
   progress$: Subject<number>,
   config: UploadChunksConfig
 ) => {
-  let totalLoaded = 0
 
   const chunkRequests$ = chunks.map((chunk, i) => {
-    const chunkUrl = config.getChunkUrl(fileMeta, i)
-    let lastLoaded = 0
-    const innerProgressSubscriber = Subscriber.create((pe: ProgressEvent) => {
-      const loaded = pe.loaded
-      totalLoaded += (loaded - lastLoaded)
-      progress$.next(totalLoaded / fileMeta.fileSize)
-      lastLoaded = loaded
-    } , () => {}) // tslint:disable-line
     let completed = false
     return Observable.defer(() => {
-      return completed ? Observable.empty() : post(chunkUrl, chunk, {
+      if (completed) {
+        return Observable.empty()
+      }
+      return post(config.getChunkUrl(fileMeta, i), chunk, {
           ...config.headers,
           ...{ 'Content-Type': 'application/octet-stream;charset=utf-8' }
-        },
-        innerProgressSubscriber
-      )
+      })
         .do(() => completed = true)
         .map(() => ({ completed: true, index: i }))
         .catch(() => Observable.of({ completed: false, index: i }))
@@ -128,6 +120,10 @@ export const uploadAllChunks = (
         return Observable.of(acc)
       }
     }, { completes: {}, errors: {} })
+    .do((acc) => {
+      const completes = Object.keys(acc.completes).length
+      progress$.next(completes * fileMeta.chunkSize / fileMeta.fileSize)
+    })
     .single((acc) => {
       return Object.keys(acc.completes).length === chunks.length
     })
@@ -139,12 +135,14 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
   const pause$ = s$.filter((b) => b)
   const resume$ = s$.filter((b) => !b)
 
+  const create$ = new Subject<FileMeta>()
   const retry$ = new Subject<void>()
   const abort$ = new Subject<void>()
   const progress$ = new Subject<number>()
   const complete$ = new Subject<FileMeta>()
 
   const upload$ = startChunkUpload(file, config)
+    .do(create$.next.bind(create$))
     .concatMap((fileMeta: FileMeta) => {
       const chunks = sliceFile(file, fileMeta.chunks, fileMeta.chunkSize)
       return uploadAllChunks(chunks, fileMeta, progress$, config)
@@ -177,6 +175,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig) => {
     retry,
     abort,
 
+    create$,
     progress$,
     complete$
   }
