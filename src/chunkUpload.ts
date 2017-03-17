@@ -233,9 +233,9 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     retry,
     abort,
 
-    create$,
-    progress$,
-    complete$: upload$,
+    create$: create$.catch(() => Observable.empty()),
+    progress$: progress$.catch(() => Observable.empty()),
+    complete$: upload$.catch(() => Observable.empty()),
     error$: upload$.filter(() => false).catch((e) => Observable.of(e))
   }
 }
