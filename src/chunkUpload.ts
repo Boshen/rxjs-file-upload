@@ -236,6 +236,6 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     create$,
     progress$,
     complete$: upload$,
-    error$: upload$.catch((e) => Observable.of(e))
+    error$: upload$.filter(() => false).catch((e) => Observable.of(e))
   }
 }

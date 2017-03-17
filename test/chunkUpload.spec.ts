@@ -228,17 +228,20 @@ chunkTests.forEach((chunks) => {
 
       it('should send completed fileMeta', () => {
         const complete = sinon.spy()
+        const error = sinon.spy()
 
-        const { start, complete$ } = chunkUpload(file, config)
+        const { start, complete$, error$ } = chunkUpload(file, config)
         start()
 
         complete$.subscribe(complete)
+        error$.subscribe(error)
 
         server.respondImmediately = true
         server.respond()
 
         expect(complete).calledOnce
         expect(complete.getCall(0).args[0]).to.eql(fileMeta)
+        expect(error).not.called
       })
 
     })
