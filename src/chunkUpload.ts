@@ -21,6 +21,7 @@ import 'rxjs/add/operator/scan'
 import 'rxjs/add/operator/single'
 import 'rxjs/add/operator/take'
 import 'rxjs/add/operator/takeUntil'
+import 'rxjs/add/operator/share'
 
 import { post } from './post'
 
@@ -212,6 +213,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
   )
     .takeUntil(abortSubject)
     .do(null, cleanUp, cleanUp)
+    .share()
 
   return {
     pause: () => { controlSubject.next(true) },

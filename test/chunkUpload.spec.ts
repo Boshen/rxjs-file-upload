@@ -83,6 +83,17 @@ chunkTests.forEach((chunks) => {
         expect(server.requests[chunks.length + 1].status).to.equal(200)
       })
 
+      it('should not subscribe multiple times and them make multiple requests', () => {
+        const { upload$ } = chunkUpload(file, config)
+        upload$.subscribe()
+        upload$.subscribe()
+
+        server.respondImmediately = true
+        server.respond()
+
+        expect(server.requests.length).to.equal(chunks.length + 2)
+      })
+
       it('should push start fileMeta, progress then finish fileMeta', () => {
         const spy = sinon.spy()
 
