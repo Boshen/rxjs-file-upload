@@ -483,43 +483,15 @@ chunkTests.forEach((chunks) => {
           server.respondImmediately = true
           server.respond()
 
-          pause()
-          pause()
-          pause()
-
-          resume()
-          resume()
-          resume()
-
-          retry()
-          retry()
-          retry()
+          expect(() => pause()).to.throw()
+          expect(() => resume()).to.throw()
+          expect(() => retry()).to.throw()
 
           if (chunks.length < 3) {
             expect(server.requests.length).to.equal(chunks.length * 2)
           } else {
             expect(server.requests.length).to.equal(chunks.length + 3)
           }
-      })
-
-      it('should not upload already uploaded chunks', () => {
-          const uploadedFileMeta = {
-            ...fileMeta,
-            uploadedChunks: [0]
-          }
-          startChunkUploadStub.returns(Observable.of(uploadedFileMeta))
-
-          const { pause, resume, retry, upload$ } = chunkUpload(file, config)
-          upload$.subscribe()
-
-          server.respondImmediately = true
-          server.respond()
-
-          expect(server.requests.length).to.equal(chunks.length - 1)
-          server.requests.forEach((r, i) => {
-            expect(r.url).to.equal(config.getChunkUrl(fileMeta, i + 1))
-            expect(r.status).to.equal(200)
-          })
       })
 
       // it.skip('should timeout requests', () => {
