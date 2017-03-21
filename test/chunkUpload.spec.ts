@@ -17,6 +17,7 @@ import {
   finishChunkUpload,
   chunkUpload,
   uploadAllChunks,
+  maxErrorsToRetry,
   ChunkProgress
 } from '../src/chunkUpload'
 
@@ -147,6 +148,39 @@ chunkTests.forEach((chunks) => {
         expect(progress.getCall(0).args[0].payload).to.equal(0.1 / fileMeta.fileSize)
       })
 
+      it('should not resend upload/start when pause resume', () => {
+        const start = sinon.spy()
+
+        const { pause, resume, upload$ } = chunkUpload(file, config)
+        upload$.filter((d) => d.action === 'upload/start').subscribe(start)
+
+        pause()
+        resume()
+
+        server.respondImmediately = true
+        server.respond()
+
+        expect(start.callCount).to.equal(1)
+      })
+
+      it('should not resend upload/start when retry', () => {
+        const start = sinon.spy()
+
+        const { retry, upload$ } = chunkUpload(file, config)
+        upload$.filter((d) => d.action === 'upload/start').subscribe(start)
+
+        server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
+        for (let i = 1; i < maxErrorsToRetry(chunks.length) + 1; i++) {
+          server.requests[i].respond(400)
+        }
+        retry()
+
+        server.respondImmediately = true
+        server.respond()
+
+        expect(start.callCount).to.equal(1)
+      })
+
       it('should error if ajax errors', () => {
         const error = sinon.spy()
 
@@ -198,6 +232,7 @@ chunkTests.forEach((chunks) => {
       })
 
       it('should not leak when error', () => {
+        const error = sinon.spy()
         const controlSubjects = {
           retrySubject: new Subject<void>(),
           abortSubject: new Subject<void>(),
@@ -205,12 +240,13 @@ chunkTests.forEach((chunks) => {
           controlSubject: new Subject<boolean>()
         }
         const { upload$ } = chunkUpload(file, config, controlSubjects)
-        upload$.subscribe()
+        upload$.subscribe(null, error)
         server.requests[0].respond(401)
         for (let subject in controlSubjects) {
           expect(controlSubjects[subject].isStopped).to.equal(true)
           expect(controlSubjects[subject].closed).to.equal(true)
         }
+        expect(error).to.be.calledOnce
       })
 
     })

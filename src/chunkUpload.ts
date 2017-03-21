@@ -16,7 +16,6 @@ import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/mergeAll'
 import 'rxjs/add/operator/mergeScan'
 import 'rxjs/add/operator/partition'
-import 'rxjs/add/operator/publishReplay'
 import 'rxjs/add/operator/repeatWhen'
 import 'rxjs/add/operator/retryWhen'
 import 'rxjs/add/operator/scan'
@@ -84,7 +83,8 @@ export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[]
 }
 
 export const startChunkUpload = (file: Blob, config: UploadChunksConfig) => {
-  return post({
+  let cache = null
+  return Observable.defer(() => cache ? Observable.of(cache) : post({
     url: config.getChunkStartUrl(),
     body: {
       fileName: file['name'], // tslint:disable-line
@@ -92,7 +92,7 @@ export const startChunkUpload = (file: Blob, config: UploadChunksConfig) => {
       lastUpdated: file['lastModifiedDate'] // tslint:disable-line
     },
     headers: config.headers
-  }).publishReplay(1).refCount()
+  }).do((fileMeta: FileMeta) => cache = fileMeta))
 }
 
 export const finishChunkUpload = (fileMeta: FileMeta, config: UploadChunksConfig) => {
@@ -100,6 +100,10 @@ export const finishChunkUpload = (fileMeta: FileMeta, config: UploadChunksConfig
     url: config.getChunkFinishUrl(fileMeta),
     headers: config.headers
   })
+}
+
+export const maxErrorsToRetry = (chunks: number) => {
+  return chunks > 3 ? 3 : 1
 }
 
 export const uploadAllChunks = (
@@ -135,7 +139,7 @@ export const uploadAllChunks = (
     .mergeScan((acc, x: ChunkStatus) => {
       acc[x.completed ? 'completes' : 'errors'][x.index] = true
       const errorsCount = Object.keys(acc.errors).length
-      if (errorsCount >= (chunks.length > 3 ? 3 : 1)) {
+      if (errorsCount >= maxErrorsToRetry(chunks.length)) {
         acc.errors = {}
         return Observable.throw(new Error('Multiple_Chunk_Upload_Error'))
       } else {
@@ -179,6 +183,13 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
       return uploadAllChunks(chunks, fileMeta, progressSubject, config)
         .takeUntil(pause$)
         .repeatWhen(() => resume$)
+        .retryWhen((e$) => {
+          return e$.concatMap((e: Error) => {
+            return e.message === 'Multiple_Chunk_Upload_Error'
+              ? retrySubject
+              : Observable.throw(e)
+          })
+        })
     })
     .take(1)
 
@@ -204,15 +215,6 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     progress$.map(createAction('upload/progress')),
     finish$.map(createAction('upload/finish'))
   )
-    .retryWhen((e$) => {
-      return e$.concatMap((e: Error) => {
-        if (e.message === 'Multiple_Chunk_Upload_Error') {
-          return retrySubject
-        } else {
-          return Observable.throw(e)
-        }
-      })
-    })
     .takeUntil(abortSubject)
     .do(null, cleanUp, cleanUp)
 
