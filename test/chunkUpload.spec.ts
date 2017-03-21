@@ -1,7 +1,6 @@
 const chai = require('chai')
 const sinon = require('sinon')
 const sinonChai = require('sinon-chai')
-const path = require('path')
 
 chai.use(sinonChai)
 const expect = chai.expect
@@ -16,7 +15,6 @@ import {
   startChunkUpload,
   finishChunkUpload,
   chunkUpload,
-  uploadAllChunks,
   maxErrorsToRetry,
   ChunkProgress
 } from '../src/chunkUpload'

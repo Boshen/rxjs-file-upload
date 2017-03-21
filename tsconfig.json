@@ -9,7 +9,7 @@
     "newLine": "LF",
     "noImplicitReturns": true,
     "noImplicitThis": true,
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     "noUnusedParameters": true,
     "outDir": "dist",
     "removeComments": true,

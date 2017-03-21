@@ -1,5 +1,4 @@
 import { Observable } from 'rxjs/Observable'
-import { Subscriber } from 'rxjs/Subscriber'
 import { AjaxRequest, AjaxResponse } from 'rxjs/observable/dom/AjaxObservable'
 
 import 'rxjs/add/observable/dom/ajax'

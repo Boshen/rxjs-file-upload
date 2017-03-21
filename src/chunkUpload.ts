@@ -1,7 +1,6 @@
 import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
 import { Subscriber } from 'rxjs/Subscriber'
-import { AjaxError } from 'rxjs/observable/dom/AjaxObservable'
 
 import 'rxjs/add/observable/concat'
 import 'rxjs/add/observable/defer'
@@ -49,13 +48,9 @@ export interface FileMeta {
   }
 }
 
-interface RequestConfig {
+interface UploadChunksConfig {
   headers?: {}
   body?: {}
-  onProgress?: (progress: number) => void
-}
-
-interface UploadChunksConfig extends RequestConfig {
   getChunkStartUrl: () => string
   getChunkUrl: (fileMeta: FileMeta, index: number) => string
   getChunkFinishUrl: (fileMeta: FileMeta) => string
@@ -136,8 +131,8 @@ export const uploadAllChunks = (
 
   return Observable.from(chunkRequests$)
     .mergeAll(3)
-    .mergeScan((acc, x: ChunkStatus) => {
-      acc[x.completed ? 'completes' : 'errors'][x.index] = true
+    .mergeScan((acc, cs: ChunkStatus) => {
+      acc[cs.completed ? 'completes' : 'errors'][cs.index] = true
       const errorsCount = Object.keys(acc.errors).length
       if (errorsCount >= maxErrorsToRetry(chunks.length)) {
         acc.errors = {}
@@ -194,8 +189,8 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     .take(1)
 
   const progress$ = progressSubject
-    .scan((acc, chunkProgress: ChunkProgress) => {
-      acc[chunkProgress.index] = chunkProgress.loaded
+    .scan((acc: {[index: number]: number}, cp: ChunkProgress) => {
+      acc[cp.index] = cp.loaded
       return acc
     }, {})
     .combineLatest(start$)
@@ -218,16 +213,11 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     .takeUntil(abortSubject)
     .do(null, cleanUp, cleanUp)
 
-  const pause = () => { controlSubject.next(true) }
-  const resume = () => { controlSubject.next(false) }
-  const retry = () => { retrySubject.next() }
-  const abort = () => { abortSubject.next() }
-
   return {
-    pause,
-    resume,
-    retry,
-    abort,
+    pause: () => { controlSubject.next(true) },
+    resume: () => { controlSubject.next(false) },
+    retry: () => { retrySubject.next() },
+    abort: () => { abortSubject.next() },
 
     upload$
   }
