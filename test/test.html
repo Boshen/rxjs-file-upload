@@ -2,22 +2,32 @@
   <head>
     <meta charset="utf-8">
     <title>File Upload Tests</title>
+    <style>
+      section {
+        margin: 20px 100px;
+      }
+      li {
+        margin: 10px;
+      }
+    </style>
   </head>
   <body>
+
     <section>
-      <h1>Click Upload</h1>
       <button id="click">Upload</button>
-      <button id="abort">Abort</button>
-      <button id="pause">Pause</button>
-      <button id="resume">Resume</button>
-      <button id="retry">Retry</button>
-      <progress id="progress" value="0" max="100"></progress>
     </section>
 
-    <input id="paste" type="text"></input>
-    <div style="width:100px;height:100px;" id="drop">Drop Here</div>
+    <section>
+      <input id="paste" type="text" placeholder="Paste Here"></input>
+    </section>
 
-    <button id="run_test">Test</button>
+    <section>
+      <div style="width:100px;height:100px;" id="drop">Drop Here</div>
+    </section>
+
+    <section>
+      <ul id="list"></ul>
+    </section>
 
   </body>
 </html>
