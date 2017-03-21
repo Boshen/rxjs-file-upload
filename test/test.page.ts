@@ -60,8 +60,7 @@ const handleUpload = (files$) => {
     })
     .subscribe(
       (buttons) => {
-        const { start, abort, pause, resume, retry, progress$, complete$} = buttons
-        start()
+        const { abort, pause, resume, retry, upload$ } = buttons
         Observable.fromEvent(document.getElementById('abort'), 'click')
           .subscribe(abort)
         Observable.fromEvent(document.getElementById('pause'), 'click')
@@ -70,17 +69,22 @@ const handleUpload = (files$) => {
           .subscribe(resume)
         Observable.fromEvent(document.getElementById('retry'), 'click')
           .subscribe(retry)
-        create$.subscribe((fileMeta) => {
-          console.info('create: ', fileMeta)
-        })
-        progress$.subscribe((p: number) => {
-          (<HTMLProgressElement>document.getElementById('progress')).value = Math.round(p * 100)
-        })
-        complete$.subscribe((fileMeta) => {
-          console.info('complete: ', fileMeta)
-        })
-        error$.subscribe((e) => {
-          console.error('error: ', e)
+
+        upload$.subscribe((d) => {
+          if (d.action === 'upload/start') {
+            console.info('start: ', d.payload)
+          }
+          if (d.action === 'upload/progress') {
+            const p: number = d.payload
+            (<HTMLProgressElement>document.getElementById('progress')).value = p
+          }
+          if (d.action === 'upload/finish') {
+            console.info('finish: ', d.payload)
+          }
+        }, (error) => {
+          console.error('error: ', error)
+        }, () => {
+          console.info('complete: ')
         })
       },
       console.error.bind(console),
