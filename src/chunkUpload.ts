@@ -1,7 +1,6 @@
 import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
 import { Subscriber } from 'rxjs/Subscriber'
-import { async } from 'rxjs/scheduler/async'
 
 import 'rxjs/add/observable/concat'
 import 'rxjs/add/observable/defer'
@@ -10,11 +9,11 @@ import 'rxjs/add/observable/from'
 import 'rxjs/add/observable/of'
 import 'rxjs/add/observable/throw'
 
-import 'rxjs/add/operator/switchMap'
-import 'rxjs/add/operator/concatMap'
 import 'rxjs/add/operator/catch'
 import 'rxjs/add/operator/combineLatest'
+import 'rxjs/add/operator/concatMap'
 import 'rxjs/add/operator/distinctUntilChanged'
+import 'rxjs/add/operator/merge'
 import 'rxjs/add/operator/mergeAll'
 import 'rxjs/add/operator/mergeScan'
 import 'rxjs/add/operator/partition'
@@ -22,12 +21,9 @@ import 'rxjs/add/operator/repeatWhen'
 import 'rxjs/add/operator/retryWhen'
 import 'rxjs/add/operator/scan'
 import 'rxjs/add/operator/single'
+import 'rxjs/add/operator/switchMap'
 import 'rxjs/add/operator/take'
 import 'rxjs/add/operator/takeUntil'
-import 'rxjs/add/operator/share'
-import 'rxjs/add/operator/startWith'
-import 'rxjs/add/operator/merge'
-import 'rxjs/add/operator/subscribeOn'
 
 import { post } from './post'
 
@@ -68,9 +64,14 @@ interface ChunkStatus {
   completed: boolean
 }
 
-export interface ChunkProgress {
+interface ChunkProgress {
   index: number
   loaded: number
+}
+
+interface ChunkScan {
+  completes: {[index: number]: boolean}
+  errors: {[index: number]: boolean}
 }
 
 export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[] => {
@@ -115,7 +116,7 @@ export const uploadAllChunks = (
   config: UploadChunksConfig
 ) => {
 
-  const chunkRequests$ = chunks.map((chunk, index) => {
+  const chunkRequests$: Array<Observable<ChunkStatus>> = chunks.map((chunk, index) => {
     let completed = false
     return Observable.defer(() => {
       if (completed) {
@@ -137,9 +138,8 @@ export const uploadAllChunks = (
   })
 
   return Observable.from(chunkRequests$)
-    .subscribeOn(async)
     .mergeAll(3)
-    .mergeScan((acc, cs: ChunkStatus) => {
+    .mergeScan((acc: ChunkScan, cs: ChunkStatus) => {
       acc[cs.completed ? 'completes' : 'errors'][cs.index] = true
       const errorsCount = Object.keys(acc.errors).length
       if (errorsCount >= maxErrorsToRetry(chunks.length)) {
@@ -154,7 +154,7 @@ export const uploadAllChunks = (
     })
 }
 
-const createControlSubjects = () => {
+export const createControlSubjects = () => {
   return {
     retrySubject: new Subject<boolean>(),
     abortSubject: new Subject<void>(),
@@ -210,6 +210,15 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
       return Object.keys(acc).reduce((t, i) => t + acc[i], 0) / fileMeta.fileSize
     })
     .distinctUntilChanged((x, y) => x > y)
+    .map(createAction('upload/progress'))
+    .merge(pause$.concatMap(() => Observable.of(
+      createAction('upload/resumable')(true),
+      createAction('upload/pausable')(false)
+    )))
+    .merge(resume$.concatMap(() => Observable.of(
+      createAction('upload/pausable')(true),
+      createAction('upload/resumable')(false)
+    )))
     .takeUntil(chunks$)
 
   const finish$ = start$
@@ -218,29 +227,29 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     })
 
   const upload$ = Observable.concat(
-    Observable.of(createAction('upload/abort')(true)),
-    Observable.of(createAction('upload/pause')(true)),
-    Observable.of(createAction('upload/resume')(false)),
-    Observable.of(createAction('upload/retry')(false)),
+    Observable.of(createAction('upload/abortable')(true)),
+    Observable.of(createAction('upload/pausable')(true)),
+    Observable.of(createAction('upload/resumable')(false)),
+    Observable.of(createAction('upload/retryable')(false)),
+
     start$.map(createAction('upload/start')),
-    progress$.map(createAction('upload/progress')),
+    progress$,
     finish$.map(createAction('upload/finish')),
-    Observable.of(createAction('upload/abort')(false)),
-    Observable.of(createAction('upload/pause')(false)),
-    Observable.of(createAction('upload/resume')(false)),
-    Observable.of(createAction('upload/retry')(false)),
+
+    Observable.of(createAction('upload/abortable')(false)),
+    Observable.of(createAction('upload/pausable')(false)),
+    Observable.of(createAction('upload/resumable')(false)),
+    Observable.of(createAction('upload/retryable')(false))
   )
-    .merge(pause$.map(() => createAction('upload/resume')(true)))
-    .merge(pause$.map(() => createAction('upload/pause')(false)))
-    .merge(resume$.map(() => createAction('upload/pause')(true)))
-    .merge(resume$.map(() => createAction('upload/resume')(false)))
-    .merge(retrySubject.map((b) => createAction('upload/retry')(!b)))
-    .merge(abortSubject.map(() => createAction('upload/abort')(false)))
-    .merge(abortSubject.map(() => createAction('upload/pause')(false)))
-    .merge(abortSubject.map(() => createAction('upload/resume')(false)))
-    .merge(abortSubject.map(() => createAction('upload/retry')(false)))
     .takeUntil(abortSubject)
     .do(null, cleanUp, cleanUp)
+    .merge(retrySubject.map((b) => createAction('upload/retryable')(!b)))
+    .merge(abortSubject.concatMap(() => Observable.of(
+      createAction('upload/abortable')(false),
+      createAction('upload/pausable')(false),
+      createAction('upload/resumable')(false),
+      createAction('upload/retryable')(false)
+    )))
 
   return {
     pause: () => { controlSubject.next(true) },
