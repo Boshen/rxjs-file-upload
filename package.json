@@ -7,12 +7,13 @@
   "scripts": {
     "test": "karma start --single-run",
     "watch": "karma start",
-    "build": "webpack",
+    "build": "rm -rf dist && tsc",
     "dev": "webpack-dev-server"
   },
   "peerDependencies": {
     "fileapi": "^2.0.21",
-    "rxjs": "^5.2.0"
+    "rxjs": "^5.2.0",
+    "tslib": "^1.6.0"
   },
   "devDependencies": {
     "@types/es6-shim": "^0.31.32",

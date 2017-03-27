@@ -4,18 +4,23 @@
     "declaration": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "importHelpers": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "newLine": "LF",
+    "noEmitHelpers": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "outDir": "dist",
     "removeComments": true,
-    "rootDir": "./",
+    "rootDir": "src",
     "sourceMap": true,
     "suppressImplicitAnyIndexErrors": true,
     "target": "es5"
-  }
+  },
+  "include": [
+    "src"
+  ]
 }
