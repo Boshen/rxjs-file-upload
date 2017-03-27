@@ -72,67 +72,76 @@ const handleUpload = (files$) => {
     Observable.fromEvent($resume, 'click').subscribe(resume)
     Observable.fromEvent($retry, 'click').subscribe(retry)
 
-    const start$ = upload$
-      .filter((d) => d.action === 'upload/start')
-      .map((d) => d.payload)
-      .do((fileMeta) => {
-        console.info('create: ', fileMeta)
-        suite.addTest(new Test('should have start fileMeta', () => {
-          expect(fileMeta).to.have.property('chunkSize').that.is.a('number')
-          expect(fileMeta).to.have.property('chunks').that.is.a('number')
-          expect(fileMeta).to.have.property('created').that.is.a('string')
-          expect(fileMeta).to.have.property('downloadUrl').that.is.a('string')
-          expect(fileMeta).to.have.property('fileCategory').that.is.a('string')
-          expect(fileMeta).to.have.property('fileKey').that.is.a('string')
-          expect(fileMeta).to.have.property('fileName').that.is.a('string')
-          expect(fileMeta).to.have.property('fileSize').that.is.a('number')
-          expect(fileMeta).to.have.property('fileType').that.is.a('string')
-          expect(fileMeta).to.have.property('mimeType').that.is.a('string')
-          expect(fileMeta).to.have.property('previewUrl').that.is.a('string')
-          expect(fileMeta).to.have.property('thumbnailUrl').that.is.a('string')
-          expect(fileMeta).to.have.property('uploadedChunks')
-            .that.is.an('array')
-            .that.have.lengthOf(0)
-        }))
+    return upload$
+      .do(({ action, payload }) => {
+        switch (action) {
+          case 'upload/pausable':
+            $pause.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
+            break
+          case 'upload/resumable':
+            $resume.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
+            break
+          case 'upload/abortable':
+            $abort.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
+            break
+          case 'upload/retryable':
+            $retry.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
+            break
+          case 'upload/start':
+            let startFileMeta = payload
+            console.info('start: ', startFileMeta)
+            suite.addTest(new Test('should have start fileMeta', () => {
+              expect(startFileMeta).to.have.property('chunkSize').that.is.a('number')
+              expect(startFileMeta).to.have.property('chunks').that.is.a('number')
+              expect(startFileMeta).to.have.property('created').that.is.a('string')
+              expect(startFileMeta).to.have.property('downloadUrl').that.is.a('string')
+              expect(startFileMeta).to.have.property('fileCategory').that.is.a('string')
+              expect(startFileMeta).to.have.property('fileKey').that.is.a('string')
+              expect(startFileMeta).to.have.property('fileName').that.is.a('string')
+              expect(startFileMeta).to.have.property('fileSize').that.is.a('number')
+              expect(startFileMeta).to.have.property('fileType').that.is.a('string')
+              expect(startFileMeta).to.have.property('mimeType').that.is.a('string')
+              expect(startFileMeta).to.have.property('previewUrl').that.is.a('string')
+              expect(startFileMeta).to.have.property('thumbnailUrl').that.is.a('string')
+              expect(startFileMeta).to.have.property('uploadedChunks')
+                .that.is.an('array')
+                .that.have.lengthOf(0)
+            }))
+            break
+          case 'upload/progress':
+            let p = payload
+            $progress.value = p
+            suite.addTest(new Test('should progress with percentage ' + p, () => {
+              expect(p).to.be.a('number')
+              expect(p).to.be.at.least(0)
+              expect(p).to.be.at.most(1)
+            }))
+            break
+          case 'upload/finish':
+            let finishFileMeta = payload
+            console.info('finish: ', finishFileMeta)
+            suite.addTest(new Test('should have finish finishFileMeta', () => {
+              expect(finishFileMeta).to.have.property('chunkSize').that.is.a('number')
+              expect(finishFileMeta).to.have.property('chunks').that.is.a('number')
+              expect(finishFileMeta).to.have.property('created').that.is.a('string')
+              expect(finishFileMeta).to.have.property('downloadUrl').that.is.a('string')
+              expect(finishFileMeta).to.have.property('fileCategory').that.is.a('string')
+              expect(finishFileMeta).to.have.property('fileKey').that.is.a('string')
+              expect(finishFileMeta).to.have.property('fileName').that.is.a('string')
+              expect(finishFileMeta).to.have.property('fileSize').that.is.a('number')
+              expect(finishFileMeta).to.have.property('fileType').that.is.a('string')
+              expect(finishFileMeta).to.have.property('lastUploadTime').that.is.a('string')
+              expect(finishFileMeta).to.have.property('mimeType').that.is.a('string')
+              expect(finishFileMeta).to.have.property('thumbnailUrl').that.is.a('string')
+              expect(finishFileMeta).to.have.property('uploadedChunks')
+                .that.is.an('array')
+                .that.have.lengthOf(finishFileMeta.chunks)
+            }))
+            break
+          default:
+            break
+        }
       })
-
-    const progress$ = upload$
-      .filter((d) => d.action === 'upload/progress')
-      .map((d) => d.payload)
-      .do((p) => {
-        $progress.value = p
-        suite.addTest(new Test('should progress with percentage ' + p, () => {
-          expect(p).to.be.a('number')
-          expect(p).to.be.at.least(0)
-          expect(p).to.be.at.most(1)
-        }))
-      })
-
-    const finish$ = upload$
-      .filter((d) => d.action === 'upload/finish')
-      .map((d) => d.payload)
-      .do((fileMeta) => {
-        console.info('finish: ', fileMeta)
-        suite.addTest(new Test('should have finish fileMeta', () => {
-          expect(fileMeta).to.have.property('chunkSize').that.is.a('number')
-          expect(fileMeta).to.have.property('chunks').that.is.a('number')
-          expect(fileMeta).to.have.property('created').that.is.a('string')
-          expect(fileMeta).to.have.property('downloadUrl').that.is.a('string')
-          expect(fileMeta).to.have.property('fileCategory').that.is.a('string')
-          expect(fileMeta).to.have.property('fileKey').that.is.a('string')
-          expect(fileMeta).to.have.property('fileName').that.is.a('string')
-          expect(fileMeta).to.have.property('fileSize').that.is.a('number')
-          expect(fileMeta).to.have.property('fileType').that.is.a('string')
-          expect(fileMeta).to.have.property('lastUploadTime').that.is.a('string')
-          expect(fileMeta).to.have.property('mimeType').that.is.a('string')
-          expect(fileMeta).to.have.property('thumbnailUrl').that.is.a('string')
-          expect(fileMeta).to.have.property('uploadedChunks')
-          .that.is.an('array')
-          .that.have.lengthOf(fileMeta.chunks)
-        }))
-      })
-
-    return Observable.merge(start$, progress$, finish$)
       .catch((e) => {
         suite.addTest(new Test('should catch error with status ' + e.status, () => {
           expect(e.status).to.be.a('number')
@@ -141,7 +150,7 @@ const handleUpload = (files$) => {
         return Observable.empty()
       })
   })
-  .subscribe()
+  .subscribe(console.log.bind(console))
 }
 
 handleUpload(

@@ -6,7 +6,6 @@ chai.use(sinonChai)
 const expect = chai.expect
 
 import { Observable } from 'rxjs/Observable'
-import { Subject } from 'rxjs/Subject'
 import { createMockFile } from './util'
 
 import 'rxjs/add/operator/filter'
@@ -16,7 +15,7 @@ import {
   finishChunkUpload,
   chunkUpload,
   maxErrorsToRetry,
-  ChunkProgress
+  createControlSubjects
 } from '../src/chunkUpload'
 
 const config = {
@@ -83,22 +82,13 @@ chunkTests.forEach((chunks) => {
         expect(server.requests[chunks.length + 1].status).to.equal(200)
       })
 
-      it('should not subscribe multiple times and them make multiple requests', () => {
-        const { upload$ } = chunkUpload(file, config)
-        upload$.subscribe()
-        upload$.subscribe()
-
-        server.respondImmediately = true
-        server.respond()
-
-        expect(server.requests.length).to.equal(chunks.length + 2)
-      })
-
       it('should push start fileMeta, progress then finish fileMeta', () => {
         const spy = sinon.spy()
 
         const { upload$ } = chunkUpload(file, config)
-        upload$.subscribe(spy)
+        upload$
+          .filter((d) => ['upload/start', 'upload/progress', 'upload/finish'].indexOf(d.action) >= 0)
+          .subscribe(spy)
 
         server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
         server.requests[1].upload.onprogress({ loaded: 1, total: fileMeta.chunkSize })
@@ -224,36 +214,26 @@ chunkTests.forEach((chunks) => {
     describe('memory', () => {
 
       it('should not leak when complete', () => {
-        const controlSubjects = {
-          retrySubject: new Subject<void>(),
-          abortSubject: new Subject<void>(),
-          progressSubject: new Subject<ChunkProgress>(),
-          controlSubject: new Subject<boolean>()
-        }
-        const { upload$ } = chunkUpload(file, config, controlSubjects)
+        const subjects = createControlSubjects()
+        const { upload$ } = chunkUpload(file, config, subjects)
         upload$.subscribe()
         server.respondImmediately = true
         server.respond()
-        for (let subject in controlSubjects) {
-          expect(controlSubjects[subject].isStopped).to.equal(true)
-          expect(controlSubjects[subject].closed).to.equal(true)
+        for (let subject in subjects) {
+          expect(subjects[subject].isStopped).to.equal(true)
+          expect(subjects[subject].closed).to.equal(true)
         }
       })
 
       it('should not leak when error', () => {
         const error = sinon.spy()
-        const controlSubjects = {
-          retrySubject: new Subject<void>(),
-          abortSubject: new Subject<void>(),
-          progressSubject: new Subject<ChunkProgress>(),
-          controlSubject: new Subject<boolean>()
-        }
-        const { upload$ } = chunkUpload(file, config, controlSubjects)
+        const subjects = createControlSubjects()
+        const { upload$ } = chunkUpload(file, config, subjects)
         upload$.subscribe(null, error)
         server.requests[0].respond(401)
-        for (let subject in controlSubjects) {
-          expect(controlSubjects[subject].isStopped).to.equal(true)
-          expect(controlSubjects[subject].closed).to.equal(true)
+        for (let subject in subjects) {
+          expect(subjects[subject].isStopped).to.equal(true)
+          expect(subjects[subject].closed).to.equal(true)
         }
         expect(error).to.be.calledOnce
       })
@@ -537,6 +517,18 @@ chunkTests.forEach((chunks) => {
           } else {
             expect(server.requests.length).to.equal(chunks.length + 3)
           }
+      })
+
+      it('should send upload/retry when we can/cannot retry', () => {
+      })
+
+      it('should send upload/pause when we can/cannot pause', () => {
+      })
+
+      it('should send upload/resume when we can/cannot resume', () => {
+      })
+
+      it('should send upload/abort when we can/cannot abort', () => {
       })
 
       // it.skip('should timeout requests', () => {
