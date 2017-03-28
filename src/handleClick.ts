@@ -1,10 +1,8 @@
 import { Observable } from 'rxjs/Observable'
-import { Subject } from 'rxjs/Subject'
 import * as FileAPI from 'fileapi'
 
 import 'rxjs/add/observable/fromEvent'
-import 'rxjs/add/operator/concatMap'
-import 'rxjs/add/operator/do'
+import 'rxjs/add/operator/switchMap'
 
 interface HandleClickConfig {
   multiple?: boolean
@@ -13,34 +11,25 @@ interface HandleClickConfig {
 
 let globalInputButton
 
-export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig = {}) => {
+export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig = {}): Observable<File[]> => {
 
   if (!globalInputButton) {
     globalInputButton = document.createElement('input')
     globalInputButton.type = 'file'
   }
 
-  const files$ = new Subject<File[]>()
-
   globalInputButton.multiple = config.multiple || true
   globalInputButton.accept = config.accept || ''
-  globalInputButton.onchange = (event) => {
-    files$.next(FileAPI.getFiles(event))
-  }
 
-  Observable.fromEvent(clickElement, 'click')
-    .subscribe(() => {
+  return Observable.fromEvent(clickElement, 'click')
+    .switchMap(() => {
+      const files$ = Observable.fromEvent(globalInputButton, 'change')
+      globalInputButton.value = null
       globalInputButton.click()
-    })
-
-  return files$
-    .concatMap((files) => {
-      return Observable.from(files)
-    })
-    .do(() => {
-      globalInputButton.value = null
-    }, () => {
-      globalInputButton.value = null
+      return files$
+        .map((event) => {
+          return FileAPI.getFiles(event)
+        })
     })
 
 }

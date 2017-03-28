@@ -4,7 +4,7 @@ import * as FileAPI from 'fileapi'
 import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/concatMap'
 
-export const handlePaste = (pasteElement: HTMLElement) => {
+export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
   return Observable.fromEvent(pasteElement, 'paste')
     .concatMap((e: ClipboardEvent) => {
       const items = e.clipboardData.items
