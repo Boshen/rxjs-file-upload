@@ -11,6 +11,7 @@ import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/observable/merge'
 import 'rxjs/add/observable/empty'
 import 'rxjs/add/operator/do'
+import 'rxjs/add/operator/mergeAll'
 import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/take'
 import 'rxjs/add/operator/filter'
@@ -36,7 +37,7 @@ const uploadConfig = {
 }
 
 const handleUpload = (files$) => {
-  files$.mergeMap((file) => {
+  files$.mergeAll().mergeMap((file) => {
     console.info('file:', file)
 
     const suite = Suite.create((<any>mocha).suite, file.name) // tslint:disable-line
@@ -46,6 +47,8 @@ const handleUpload = (files$) => {
 
     const list = document.getElementById('list')
     const li = document.createElement('li')
+    const $name = document.createElement('h1')
+    $name.innerText = file.name
     const $abort = document.createElement('button')
     $abort.textContent = 'Abort'
     const $pause = document.createElement('button')
@@ -58,6 +61,7 @@ const handleUpload = (files$) => {
     $progress.setAttribute('value', '0')
     $progress.setAttribute('max', '1')
 
+    li.appendChild($name)
     li.appendChild($abort)
     li.appendChild($pause)
     li.appendChild($resume)
@@ -154,8 +158,13 @@ const handleUpload = (files$) => {
 }
 
 handleUpload(
-  handleClick(document.getElementById('click'), {
-    multiple: true
+  handleClick(document.getElementById('click1'),)
+)
+
+handleUpload(
+  handleClick(document.getElementById('click2'), {
+    multiple: true,
+    accept: 'image/*'
   })
 )
 
