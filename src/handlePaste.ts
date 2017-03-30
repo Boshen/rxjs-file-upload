@@ -1,18 +1,30 @@
 import { Observable } from 'rxjs/Observable'
-import * as FileAPI from 'fileapi'
 
 import 'rxjs/add/observable/fromEvent'
-import 'rxjs/add/operator/concatMap'
+import 'rxjs/add/operator/map'
+
+let uid = 0
+const image = 'iamge/png'
 
 export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
   return Observable.fromEvent(pasteElement, 'paste')
-    .concatMap((e: ClipboardEvent) => {
+    .map((e: ClipboardEvent) => {
       const items = e.clipboardData.items
       const files = []
       if (items) {
         for (let i = 0; i < items.length; i++) {
-          const file = items[i].getAsFile()
-          if (FileAPI.isBlob(file)) {
+          const blob = items[i].getAsFile()
+          if (blob && ({}.toString.call(blob) === '[object Blob]')) {
+            let file
+            const name = `Screenshot ${uid++}.png`
+            try {
+              file = new File([blob], name, { type: image })
+            } catch (_) {
+              file = <any>blob // tslint:disable-line
+              file.lastModifiedDate = new Date()
+              file.name = name
+              file.type = image
+            }
             files.push(file)
           }
         }
