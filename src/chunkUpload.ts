@@ -254,10 +254,10 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     )))
 
   return {
-    pause: () => { controlSubject.next(true) },
-    resume: () => { controlSubject.next(false) },
-    retry: () => { retrySubject.next(true) },
-    abort: () => { abortSubject.next() },
+    pause: () => { if (!controlSubject.closed) { controlSubject.next(true) } },
+    resume: () => { if (!controlSubject.closed) { controlSubject.next(false) } },
+    retry: () => { if (!retrySubject.closed) { retrySubject.next(true) } },
+    abort: () => { if (!abortSubject.closed) { abortSubject.next() } },
 
     upload$
   }
