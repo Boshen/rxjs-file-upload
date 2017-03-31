@@ -4,7 +4,7 @@ import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/map'
 
 let uid = 0
-const image = 'iamge/png'
+const image = 'image/png'
 
 export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
   return Observable.fromEvent(pasteElement, 'paste')
@@ -16,7 +16,7 @@ export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
           const blob = items[i].getAsFile()
           if (blob && ({}.toString.call(blob) === '[object Blob]')) {
             let file
-            const name = `Screenshot ${uid++}.png`
+            const name = `Screenshot-${uid++}.png`
             try {
               file = new File([blob], name, { type: image })
             } catch (_) {
