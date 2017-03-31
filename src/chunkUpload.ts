@@ -55,7 +55,6 @@ export interface FileMeta {
 
 interface UploadChunksConfig {
   headers?: {}
-  body?: {}
   getChunkStartUrl: () => string
   getChunkUrl: (fileMeta: FileMeta, index: number) => string
   getChunkFinishUrl: (fileMeta: FileMeta) => string
@@ -214,12 +213,10 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     .distinctUntilChanged((x, y) => x > y)
     .map(createAction('upload/progress'))
     .merge(pause$.concatMap(() => Observable.of(
-      createAction('upload/resumable')(true),
       createAction('upload/pausable')(false)
     )))
     .merge(resume$.concatMap(() => Observable.of(
       createAction('upload/pausable')(true),
-      createAction('upload/resumable')(false)
     )))
     .takeUntil(chunks$)
 
@@ -229,27 +226,21 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     })
 
   const upload$ = Observable.concat(
-    Observable.of(createAction('upload/abortable')(true)),
     Observable.of(createAction('upload/pausable')(true)),
-    Observable.of(createAction('upload/resumable')(false)),
     Observable.of(createAction('upload/retryable')(false)),
 
     start$.map(createAction('upload/start')),
     progress$,
     finish$.map(createAction('upload/finish')),
 
-    Observable.of(createAction('upload/abortable')(false)),
     Observable.of(createAction('upload/pausable')(false)),
-    Observable.of(createAction('upload/resumable')(false)),
     Observable.of(createAction('upload/retryable')(false))
   )
     .takeUntil(abortSubject)
     .do(null, cleanUp, cleanUp)
     .merge(retrySubject.map((b) => createAction('upload/retryable')(!b)))
     .merge(abortSubject.concatMap(() => Observable.of(
-      createAction('upload/abortable')(false),
       createAction('upload/pausable')(false),
-      createAction('upload/resumable')(false),
       createAction('upload/retryable')(false)
     )))
 

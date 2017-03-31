@@ -1,70 +1,72 @@
-// import { Subject } from 'rxjs/Subject'
-// import { Subscriber } from 'rxjs/Subscriber'
+import { Observable } from 'rxjs/Observable'
+import { Subject } from 'rxjs/Subject'
 
-// import { post } from './post'
+import 'rxjs/add/observable/never'
+import 'rxjs/add/observable/concat'
+import 'rxjs/add/observable/of'
 
-// const noop = (..._: any[]) => {}
+import 'rxjs/add/operator/do'
+import 'rxjs/add/operator/merge'
+import 'rxjs/add/operator/multicast'
+import 'rxjs/add/operator/retryWhen'
+import 'rxjs/add/operator/takeUntil'
 
-// interface RequestConfig {
-  // headers?: Object
-  // body?: {}
-  // onCreate?: () => void
-  // onProgress?: (pe: ProgressEvent) => void
-  // onSuccess?: (response?: Aj) => void
-  // onError?: (error?: any) => void
-// }
+import { post } from './post'
 
-// interface UploadConfig extends RequestConfig {
-  // getUploadUrl: () => string
-// }
+interface UploadConfig {
+  headers?: {}
+  getUploadUrl: () => string
+}
 
-// export const upload = (config: UploadConfig) => {
-  // const {
-    // body,
-    // onCreate = noop,
-    // onProgress = noop,
-    // onSuccess = noop,
-    // onError = noop
-  // } = config
+export const createControlSubjects = () => {
+  return {
+    retrySubject: new Subject<boolean>(),
+    abortSubject: new Subject<void>()
+  }
+}
 
-  // const progressSubscriber = Subscriber.create(
-    // onProgress,
-    // noop
-  // )
+const createAction = (action: string) => (payload) => ({ action, payload })
 
-  // const retry$ = new Subject()
+export const upload = (file: Blob, config: UploadConfig, controlSubjects = createControlSubjects()) => {
 
-  // onCreate()
+  const { retrySubject, abortSubject } = controlSubjects
 
-  // const subscription = post({
-    // url: config.getUploadUrl(),
-    // body,
-    // headers: config.headers,
-    // isStream: true,
-    // progressSubscriber
-  // })
-    // .do(null, (e) => {
-      // onError(e)
-    // })
-    // .retryWhen(() => {
-      // return retry$
-    // })
-    // .subscribe(
-      // (response) => {
-        // onSuccess(response)
-      // }
-    // )
+  const cleanUp = () => {
+    retrySubject.unsubscribe()
+    abortSubject.unsubscribe()
+  }
 
-  // const abort = () => {
-    // subscription.unsubscribe()
-  // }
+  const post$ = Observable.never().multicast(
+    () => new Subject(),
+    (subject) => subject
+      .map((pe: ProgressEvent) => createAction('upload/progress')(pe.loaded / pe.total))
+      .merge(post({
+        url: config.getUploadUrl(),
+        body: file,
+        headers: config.headers,
+        isStream: true,
+        progressSubscriber: <any>subject // tslint:disable-line
+      }).map(createAction('upload/finish')))
+  )
+    .retryWhen((e$) => {
+      return e$
+        .do(() => retrySubject.next(false))
+        .switchMap(() => retrySubject.filter((b) => b))
+    })
 
-  // const retry = () => {
-    // retry$.next()
-  // }
+  const upload$ = Observable.concat(
+    Observable.of(createAction('upload/retryable')(false)),
+    Observable.of(createAction('upload/start')(null)),
+    post$,
+  )
+    .merge(retrySubject.map((b) => createAction('upload/retryable')(!b)))
+    .do(null, cleanUp, cleanUp)
+    .takeUntil(abortSubject)
 
-  // return {
-    // abort,
-    // retry
-  // }
-// }
+  return {
+    retry: () => { if (!retrySubject.closed) { retrySubject.next(true) } },
+    abort: () => { if (!abortSubject.closed) { abortSubject.next() } },
+
+    upload$
+  }
+}

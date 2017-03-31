@@ -17,13 +17,16 @@ import 'rxjs/add/operator/take'
 import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/catch'
 
-import { chunkUpload, handleClick, handlePaste, handleDrop } from '../src'
+import { upload, chunkUpload, handleClick, handlePaste, handleDrop } from '../src'
 
-const HOST = ''
+const HOST = 'http://striker.project.ci'
 
 const uploadConfig = {
   headers: {
-    Authorization: '' // tslint:disable-line
+    Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI1NWQyNWZiODIwYzc1OTlhMDExMzBkOGEiLCJleHAiOjE0OTEwMjgwNTQsInN0b3JhZ2UiOiJkZWZhdWx0In0.C48F9E9DPEOjsn6Yw4nLKQZriU26jEmKdN0eXvdGQaM' // tslint:disable-line
+  },
+  getUploadUrl: () => {
+    return `${HOST}/upload`
   },
   getChunkStartUrl: () => {
     return `${HOST}/upload/chunk`
@@ -62,28 +65,36 @@ const handleUpload = (files$) => {
     $progress.setAttribute('max', '1')
 
     li.appendChild($name)
-    li.appendChild($abort)
-    li.appendChild($pause)
-    li.appendChild($resume)
-    li.appendChild($retry)
-    li.appendChild($progress)
     list.appendChild(li)
 
-    const { abort, pause, resume, retry, upload$ } = chunkUpload(file, uploadConfig)
+    const uploadFn: Function = /^image/.test(file.type) ? upload : chunkUpload
+    const { abort, pause, resume, retry, upload$ } = uploadFn(file, uploadConfig)
 
-    Observable.fromEvent($abort, 'click').subscribe(abort)
-    Observable.fromEvent($pause, 'click').subscribe(pause)
-    Observable.fromEvent($resume, 'click').subscribe(resume)
-    Observable.fromEvent($retry, 'click').subscribe(retry)
+    if (abort) {
+      li.appendChild($abort)
+      Observable.fromEvent($abort, 'click').subscribe(abort)
+    }
+    if (pause) {
+      li.appendChild($pause)
+      Observable.fromEvent($pause, 'click').subscribe(pause)
+    }
+    if (resume) {
+      li.appendChild($resume)
+      Observable.fromEvent($resume, 'click').subscribe(resume)
+    }
+    if (retry) {
+      li.appendChild($retry)
+      Observable.fromEvent($retry, 'click').subscribe(retry)
+    }
+
+    li.appendChild($progress)
 
     return upload$
       .do(({ action, payload }) => {
         switch (action) {
           case 'upload/pausable':
             $pause.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
-            break
-          case 'upload/resumable':
-            $resume.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
+            $resume.setAttribute('style', !payload ? 'visibility: visible' : 'visibility: hidden')
             break
           case 'upload/abortable':
             $abort.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
@@ -154,7 +165,7 @@ const handleUpload = (files$) => {
         return Observable.empty()
       })
   })
-  .subscribe(console.log.bind(console))
+  .subscribe(console.log.bind(console, 'final output: '))
 }
 
 handleUpload(
