@@ -202,7 +202,7 @@ chunkTests.forEach((chunks) => {
         server.respondImmediately = true
         server.requests[0].respond(401)
 
-        expect(() => retry()).to.throw()
+        expect(() => retry()).not.to.throw()
 
         expect(server.requests.length).to.equal(1)
         expect(error).calledOnce
@@ -508,9 +508,9 @@ chunkTests.forEach((chunks) => {
           server.respondImmediately = true
           server.respond()
 
-          expect(() => pause()).to.throw()
-          expect(() => resume()).to.throw()
-          expect(() => retry()).to.throw()
+          expect(() => pause()).not.to.throw()
+          expect(() => resume()).not.to.throw()
+          expect(() => retry()).not.to.throw()
 
           if (chunks.length < 3) {
             expect(server.requests.length).to.equal(chunks.length * 2)
@@ -529,6 +529,9 @@ chunkTests.forEach((chunks) => {
       })
 
       it('should send upload/abort when we can/cannot abort', () => {
+      })
+
+      it('should indicate all files are uploaded', () => {
       })
 
       // it.skip('should timeout requests', () => {
