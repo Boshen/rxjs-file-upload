@@ -103,6 +103,9 @@ const handleUpload = (files$) => {
             $retry.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
             break
           case 'upload/start':
+            if (uploadFn === upload) {
+              break
+            }
             let startFileMeta = payload
             console.info('start: ', startFileMeta)
             suite.addTest(new Test('should have start fileMeta', () => {
@@ -135,22 +138,25 @@ const handleUpload = (files$) => {
           case 'upload/finish':
             let finishFileMeta = payload
             console.info('finish: ', finishFileMeta)
+            suite.addTest(new Test('check response data', () => {
+              expect(finishFileMeta.fileName).to.equal(file.name)
+            }))
             suite.addTest(new Test('should have finish finishFileMeta', () => {
-              expect(finishFileMeta).to.have.property('chunkSize').that.is.a('number')
-              expect(finishFileMeta).to.have.property('chunks').that.is.a('number')
-              expect(finishFileMeta).to.have.property('created').that.is.a('string')
+              if (uploadFn === chunkUpload) {
+                expect(finishFileMeta).to.have.property('chunkSize').that.is.a('number')
+                expect(finishFileMeta).to.have.property('chunks').that.is.a('number')
+                expect(finishFileMeta).to.have.property('uploadedChunks')
+                  .that.is.an('array')
+                  .that.have.lengthOf(finishFileMeta.chunks)
+              }
               expect(finishFileMeta).to.have.property('downloadUrl').that.is.a('string')
               expect(finishFileMeta).to.have.property('fileCategory').that.is.a('string')
               expect(finishFileMeta).to.have.property('fileKey').that.is.a('string')
               expect(finishFileMeta).to.have.property('fileName').that.is.a('string')
               expect(finishFileMeta).to.have.property('fileSize').that.is.a('number')
               expect(finishFileMeta).to.have.property('fileType').that.is.a('string')
-              expect(finishFileMeta).to.have.property('lastUploadTime').that.is.a('string')
               expect(finishFileMeta).to.have.property('mimeType').that.is.a('string')
               expect(finishFileMeta).to.have.property('thumbnailUrl').that.is.a('string')
-              expect(finishFileMeta).to.have.property('uploadedChunks')
-                .that.is.an('array')
-                .that.have.lengthOf(finishFileMeta.chunks)
             }))
             break
           default:

@@ -27,7 +27,7 @@ export const createControlSubjects = () => {
 
 const createAction = (action: string) => (payload) => ({ action, payload })
 
-export const upload = (file: Blob, config: UploadConfig, controlSubjects = createControlSubjects()) => {
+export const upload = (file: File, config: UploadConfig, controlSubjects = createControlSubjects()) => {
 
   const { retrySubject, abortSubject } = controlSubjects
 
@@ -41,10 +41,12 @@ export const upload = (file: Blob, config: UploadConfig, controlSubjects = creat
     (subject) => subject
       .map((pe: ProgressEvent) => createAction('upload/progress')(pe.loaded / pe.total))
       .merge(post({
-        url: config.getUploadUrl(),
+        url: `${config.getUploadUrl()}/?fileName=${file.name}`,
         body: file,
-        headers: config.headers,
-        isStream: true,
+        headers: {
+          ...config.headers,
+          'Content-Type': 'application/octet-stream'
+        },
         progressSubscriber: <any>subject // tslint:disable-line
       }).map(createAction('upload/finish')))
   )

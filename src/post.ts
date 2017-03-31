@@ -8,7 +8,6 @@ interface PostConfig {
   url: string
   body?: {}
   headers?: {}
-  isStream?: boolean
   progressSubscriber?: AjaxRequest['progressSubscriber']
 }
 
@@ -16,16 +15,12 @@ export const post = ({
   url,
   body,
   headers,
-  isStream = false,
   progressSubscriber
 }: PostConfig) => {
   return Observable.ajax({
     url,
     body,
-    headers: {
-      'Content-Type': isStream ? 'application/octet-stream' : 'application/json',
-      ...headers
-    },
+    headers,
     method: 'POST',
     crossDomain: true,
     progressSubscriber

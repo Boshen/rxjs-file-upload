@@ -95,14 +95,20 @@ export const startChunkUpload = (file: Blob, config: UploadChunksConfig) => {
       fileSize: file['size'], // tslint:disable-line
       lastUpdated: file['lastModifiedDate'] // tslint:disable-line
     },
-    headers: config.headers
+    headers: {
+      ...config.headers,
+      'Content-Type': 'application/json'
+    }
   }).do((fileMeta: FileMeta) => cache = fileMeta))
 }
 
 export const finishChunkUpload = (fileMeta: FileMeta, config: UploadChunksConfig) => {
   return post({
     url: config.getChunkFinishUrl(fileMeta),
-    headers: config.headers
+    headers: {
+      ...config.headers,
+      'Content-Type': 'application/json'
+    }
   })
 }
 
@@ -126,8 +132,10 @@ export const uploadAllChunks = (
       return post({
         url: config.getChunkUrl(fileMeta, index),
         body: chunk,
-        headers: config.headers,
-        isStream: true,
+        headers: {
+          ...config.headers,
+          'Content-Type': 'application/octet-stream'
+        },
         progressSubscriber: Subscriber.create((pe: ProgressEvent) => {
           progressSubject.next({ index, loaded: pe.loaded })
         }, () => {}) // tslint:disable-line
