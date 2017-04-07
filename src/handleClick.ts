@@ -2,6 +2,8 @@ import { Observable } from 'rxjs/Observable'
 import * as FileAPI from 'fileapi'
 
 import 'rxjs/add/observable/fromEvent'
+import 'rxjs/add/observable/fromEventPattern'
+import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/switchMap'
 import 'rxjs/add/operator/take'
 
@@ -19,19 +21,23 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
     globalInputButton.type = 'file'
   }
 
-  globalInputButton.multiple = config.multiple || true
-  globalInputButton.accept = config.accept || ''
-
   return Observable.fromEvent(clickElement, 'click')
     .switchMap(() => {
-      const files$ = Observable.fromEvent(globalInputButton, 'change')
-      globalInputButton.value = null
+      const files$ = Observable.fromEventPattern(
+        (handler) => {
+          globalInputButton.multiple = config.multiple || true
+          globalInputButton.accept = config.accept || ''
+          globalInputButton.value = null
+          globalInputButton.onchange = handler
+        },
+        () => globalInputButton.onchange = null
+      )
       globalInputButton.click()
       return files$
-        .take(1)
         .map((event) => {
           return FileAPI.getFiles(event)
         })
+        .take(1)
     })
 
 }
