@@ -179,6 +179,10 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
   const { retrySubject, abortSubject, progressSubject, controlSubject } = controlSubjects
 
   const cleanUp = () => {
+    retrySubject.complete()
+    abortSubject.complete()
+    progressSubject.complete()
+    controlSubject.complete()
     retrySubject.unsubscribe()
     abortSubject.unsubscribe()
     progressSubject.unsubscribe()

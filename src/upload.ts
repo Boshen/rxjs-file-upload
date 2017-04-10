@@ -32,6 +32,8 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
   const { retrySubject, abortSubject } = controlSubjects
 
   const cleanUp = () => {
+    retrySubject.complete()
+    abortSubject.complete()
     retrySubject.unsubscribe()
     abortSubject.unsubscribe()
   }
@@ -63,9 +65,9 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     Observable.of(createAction('upload/start')(null)),
     post$,
   )
-    .merge(retrySubject.map((b) => createAction('upload/retryable')(!b)))
-    .do(null, cleanUp, cleanUp)
     .takeUntil(abortSubject)
+    .do(null, cleanUp, cleanUp)
+    .merge(retrySubject.map((b) => createAction('upload/retryable')(!b)))
 
   return {
     retry: () => { if (!retrySubject.closed) { retrySubject.next(true) } },
