@@ -172,7 +172,7 @@ export const createControlSubjects = () => {
   }
 }
 
-const createAction = (action: string) => (payload) => ({ action, payload })
+const createAction = (action: string) => (payload) => ({ action: `upload/${action}`, payload })
 
 export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubjects = createControlSubjects()) => {
 
@@ -223,12 +223,12 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
       return Object.keys(acc).reduce((t, i) => t + acc[i], 0) / fileMeta.fileSize
     })
     .distinctUntilChanged((x, y) => x > y)
-    .map(createAction('upload/progress'))
+    .map(createAction('progress'))
     .merge(pause$.concatMap(() => Observable.of(
-      createAction('upload/pausable')(false)
+      createAction('pausable')(false)
     )))
     .merge(resume$.concatMap(() => Observable.of(
-      createAction('upload/pausable')(true),
+      createAction('pausable')(true),
     )))
     .takeUntil(chunks$)
 
@@ -238,22 +238,22 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     })
 
   const upload$ = Observable.concat(
-    Observable.of(createAction('upload/pausable')(true)),
-    Observable.of(createAction('upload/retryable')(false)),
+    Observable.of(createAction('pausable')(true)),
+    Observable.of(createAction('retryable')(false)),
 
-    start$.map(createAction('upload/start')),
+    start$.map(createAction('start')),
     progress$,
-    finish$.map(createAction('upload/finish')),
+    finish$.map(createAction('finish')),
 
-    Observable.of(createAction('upload/pausable')(false)),
-    Observable.of(createAction('upload/retryable')(false))
+    Observable.of(createAction('pausable')(false)),
+    Observable.of(createAction('retryable')(false))
   )
     .takeUntil(abortSubject)
     .do(null, cleanUp, cleanUp)
-    .merge(retrySubject.map((b) => createAction('upload/retryable')(!b)))
+    .merge(retrySubject.map((b) => createAction('retryable')(!b)))
     .merge(abortSubject.concatMap(() => Observable.of(
-      createAction('upload/pausable')(false),
-      createAction('upload/retryable')(false)
+      createAction('pausable')(false),
+      createAction('retryable')(false)
     )))
 
   return {

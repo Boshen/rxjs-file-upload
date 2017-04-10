@@ -25,7 +25,7 @@ export const createControlSubjects = () => {
   }
 }
 
-const createAction = (action: string) => (payload) => ({ action, payload })
+const createAction = (action: string) => (payload) => ({ action: `upload/${action}`, payload })
 
 export const upload = (file: File, config: UploadConfig, controlSubjects = createControlSubjects()) => {
 
@@ -41,9 +41,9 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
   const post$ = Observable.never().multicast(
     () => new Subject(),
     (subject) => subject
-      .map((pe: ProgressEvent) => createAction('upload/progress')(pe.loaded / pe.total))
+      .map((pe: ProgressEvent) => createAction('progress')(pe.loaded / pe.total))
       .merge(post({
-        url: `${config.getUploadUrl()}/?fileName=${file.name}`,
+        url: `${config.getUploadUrl()}?fileName=${file.name}`,
         body: file,
         headers: {
           ...config.headers,
@@ -52,7 +52,7 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
         progressSubscriber: <any>subject // tslint:disable-line
       })
       .map((response) => ({ ...response, fileName: file.name }))
-      .map(createAction('upload/finish')))
+      .map(createAction('finish')))
   )
     .retryWhen((e$) => {
       return e$
@@ -61,13 +61,13 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     })
 
   const upload$ = Observable.concat(
-    Observable.of(createAction('upload/retryable')(false)),
-    Observable.of(createAction('upload/start')(null)),
+    Observable.of(createAction('retryable')(false)),
+    Observable.of(createAction('start')(null)),
     post$,
   )
     .takeUntil(abortSubject)
     .do(null, cleanUp, cleanUp)
-    .merge(retrySubject.map((b) => createAction('upload/retryable')(!b)))
+    .merge(retrySubject.map((b) => createAction('retryable')(!b)))
 
   return {
     retry: () => { if (!retrySubject.closed) { retrySubject.next(true) } },

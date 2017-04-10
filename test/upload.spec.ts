@@ -17,7 +17,7 @@ describe('upload', () => {
   const fileMeta = {
   }
   const file = createMockFile('test.txt', 'x')
-  const url = `${baseurl}/?fileName=${file.name}`
+  const url = `${baseurl}?fileName=${file.name}`
 
   let server: any
 
