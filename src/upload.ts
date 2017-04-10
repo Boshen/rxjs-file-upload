@@ -48,7 +48,9 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
           'Content-Type': 'application/octet-stream'
         },
         progressSubscriber: <any>subject // tslint:disable-line
-      }).map(createAction('upload/finish')))
+      })
+      .map((response) => ({ ...response, fileName: file.name }))
+      .map(createAction('upload/finish')))
   )
     .retryWhen((e$) => {
       return e$
