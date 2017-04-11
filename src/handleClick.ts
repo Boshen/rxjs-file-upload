@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs/Observable'
-import * as FileAPI from 'fileapi'
+import * as FileAPI from 'fileapi/dist/FileAPI.html5'
 
 import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/switchMapTo'
