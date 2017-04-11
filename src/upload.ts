@@ -51,14 +51,13 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     (subject) => subject
       .map((pe: ProgressEvent) => createAction('progress')(pe.loaded / pe.total))
       .merge(post({
-        url: `${config.getUploadUrl()}?fileName=${file.name}`,
+        url: config.getUploadUrl(),
         body: createFormData(file),
         headers: {
           ...config.headers,
         },
         progressSubscriber: <any>subject // tslint:disable-line
       })
-      .map((response) => ({ ...response, fileName: file.name }))
       .map(createAction('finish')))
   )
     .retryWhen((e$) => {

@@ -17,7 +17,7 @@ describe('upload', () => {
   const fileMeta = {
   }
   const file = createMockFile('test.txt', 'x')
-  const url = `${baseurl}?fileName=${file.name}`
+  const url = baseurl
 
   let server: any
 
@@ -41,9 +41,6 @@ describe('upload', () => {
 
     expect(request.url).to.equal(url)
     expect(request.method).to.equal('POST')
-    expect(JSON.stringify(request.requestHeaders)).to.equal(JSON.stringify({
-      'Content-Type': 'application/octet-stream;charset=utf-8',
-    }))
     expect(request.status).to.equal(200)
   })
 
