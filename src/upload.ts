@@ -27,6 +27,14 @@ export const createControlSubjects = () => {
 
 const createAction = (action: string) => (payload) => ({ action: `upload/${action}`, payload })
 
+const createFormData = (file: File) => {
+  const formData = new FormData()
+  const keys = ['name', 'type', 'size', 'lastModifiedDate']
+  keys.forEach((key) => formData.append(key, file[key]))
+  formData.append('file', file, file.name)
+  return formData
+}
+
 export const upload = (file: File, config: UploadConfig, controlSubjects = createControlSubjects()) => {
 
   const { retrySubject, abortSubject } = controlSubjects
@@ -44,10 +52,9 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
       .map((pe: ProgressEvent) => createAction('progress')(pe.loaded / pe.total))
       .merge(post({
         url: `${config.getUploadUrl()}?fileName=${file.name}`,
-        body: file,
+        body: createFormData(file),
         headers: {
           ...config.headers,
-          'Content-Type': 'application/octet-stream'
         },
         progressSubscriber: <any>subject // tslint:disable-line
       })
