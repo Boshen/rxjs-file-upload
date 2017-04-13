@@ -7,6 +7,7 @@ import 'rxjs/add/operator/switchMapTo'
 interface HandleClickConfig {
   multiple?: boolean
   accept?: string
+  directory?: boolean
 }
 
 let globalInputButton
@@ -21,6 +22,7 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
   const file$ = Observable.create((obs) => {
     globalInputButton.multiple = config.multiple || true
     globalInputButton.accept = config.accept || ''
+    globalInputButton.webkitdirectory = config.directory || false
     globalInputButton.value = null
     globalInputButton.onchange = (e) => {
       obs.next(FileAPI.getFiles(e))

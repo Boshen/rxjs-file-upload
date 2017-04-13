@@ -21,6 +21,17 @@ import { upload, chunkUpload, handleClick, handlePaste, handleDrop } from '../sr
 
 const HOST = 'http://striker.project.ci'
 
+const preventDefault = (e) => {
+  if (e.target.nodeName === 'INPUT' && e.target.type === 'file') {
+    return
+  }
+  e.preventDefault()
+}
+
+window.addEventListener('dragenter', preventDefault)
+window.addEventListener('drop', preventDefault)
+window.addEventListener('dragover', preventDefault)
+
 const uploadConfig = {
   headers: {
     Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI1NWQyNWZiODIwYzc1OTlhMDExMzBkOGEiLCJleHAiOjE0OTEwMjgwNTQsInN0b3JhZ2UiOiJkZWZhdWx0In0.C48F9E9DPEOjsn6Yw4nLKQZriU26jEmKdN0eXvdGQaM' // tslint:disable-line
@@ -171,11 +182,14 @@ const handleUpload = (files$) => {
         return Observable.empty()
       })
   })
+  .catch((_, caught) => {
+    return caught
+  })
   .subscribe(console.log.bind(console, 'final output: '))
 }
 
 handleUpload(
-  handleClick(document.getElementById('click1'),)
+  handleClick(document.getElementById('click1'))
 )
 
 handleUpload(
@@ -186,11 +200,28 @@ handleUpload(
 )
 
 handleUpload(
+  handleClick(document.getElementById('click3'), {
+    directory: true
+  })
+)
+
+handleUpload(
   handlePaste(document.getElementById('paste'))
 )
 
 handleUpload(
-  handleDrop(document.getElementById('drop'))
+  handleDrop(document.getElementById('drop1'), {
+    onDrop: console.log.bind(console, 'on drop 1'),
+    onHover: console.log.bind(console, 'on hover 1')
+  })
+)
+
+handleUpload(
+  handleDrop(document.getElementById('drop2'), {
+    directory: true,
+    onDrop: console.log.bind(console, 'on drop 2'),
+    onHover: console.log.bind(console, 'on hover 2')
+  })
 )
 
 const testButton = document.getElementById('test')
