@@ -4,7 +4,7 @@ import { AjaxRequest, AjaxResponse } from 'rxjs/observable/dom/AjaxObservable'
 import 'rxjs/add/observable/dom/ajax'
 import 'rxjs/add/operator/map'
 
-interface PostConfig {
+export interface PostConfig {
   url: string
   body?: {}
   headers?: {}

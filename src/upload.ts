@@ -13,7 +13,7 @@ import 'rxjs/add/operator/takeUntil'
 
 import { post } from './post'
 
-interface UploadConfig {
+export interface UploadConfig {
   headers?: {}
   getUploadUrl: () => string
 }
@@ -72,7 +72,7 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     post$,
   )
     .takeUntil(abortSubject)
-    .do(null, cleanUp, cleanUp)
+    .do(() => {}, cleanUp, cleanUp)
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))
 
   return {

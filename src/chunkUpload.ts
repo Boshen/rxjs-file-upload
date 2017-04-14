@@ -53,24 +53,24 @@ export interface FileMeta {
   }
 }
 
-interface UploadChunksConfig {
+export interface UploadChunksConfig {
   headers?: {}
   getChunkStartUrl: () => string
   getChunkUrl: (fileMeta: FileMeta, index: number) => string
   getChunkFinishUrl: (fileMeta: FileMeta) => string
 }
 
-interface ChunkStatus {
+export interface ChunkStatus {
   index: string
   completed: boolean
 }
 
-interface ChunkProgress {
+export interface ChunkProgress {
   index: number
   loaded: number
 }
 
-interface ChunkScan {
+export interface ChunkScan {
   completes: {[index: number]: boolean}
   errors: {[index: number]: boolean}
 }
@@ -87,7 +87,7 @@ export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[]
 }
 
 export const startChunkUpload = (file: Blob, config: UploadChunksConfig) => {
-  let cache = null
+  let cache: null | FileMeta = null
   return Observable.defer(() => cache ? Observable.of(cache) : post({
     url: config.getChunkStartUrl(),
     body: {
@@ -249,7 +249,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     Observable.of(createAction('retryable')(false))
   )
     .takeUntil(abortSubject)
-    .do(null, cleanUp, cleanUp)
+    .do(() => {}, cleanUp, cleanUp)
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))
     .merge(abortSubject.concatMap(() => Observable.of(
       createAction('pausable')(false),

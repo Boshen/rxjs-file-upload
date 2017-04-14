@@ -4,7 +4,7 @@ import * as FileAPI from 'fileapi/dist/FileAPI.html5'
 import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/switchMapTo'
 
-interface HandleClickConfig {
+export interface HandleClickConfig {
   multiple?: boolean
   accept?: string
   directory?: boolean

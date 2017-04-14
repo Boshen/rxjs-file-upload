@@ -3,7 +3,7 @@ import * as FileAPI from 'fileapi/dist/FileAPI.html5'
 
 import 'rxjs/add/operator/do'
 
-interface HandleDropOptions {
+export interface HandleDropOptions {
   directory: boolean
   onHover: (e: HTMLElement, hover: boolean) => void
   onDrop: (e: HTMLElement) => void

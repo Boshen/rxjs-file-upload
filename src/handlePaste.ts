@@ -10,7 +10,7 @@ export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
   return Observable.fromEvent(pasteElement, 'paste')
     .map((e: ClipboardEvent) => {
       const items = e.clipboardData.items
-      const files = []
+      const files: File[] = []
       if (items) {
         for (let i = 0; i < items.length; i++) {
           const blob = items[i].getAsFile()
