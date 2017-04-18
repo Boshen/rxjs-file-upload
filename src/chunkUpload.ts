@@ -55,10 +55,10 @@ export interface FileMeta {
 
 export interface UploadChunksConfig {
   headers?: {}
+  autoStart?: boolean
   getChunkStartUrl: () => string
   getChunkUrl: (fileMeta: FileMeta, index: number) => string
   getChunkFinishUrl: (fileMeta: FileMeta) => string
-  autoStart?: boolean
 }
 
 export interface ChunkStatus {
@@ -170,7 +170,8 @@ export const createControlSubjects = () => {
     retrySubject: new Subject<boolean>(),
     abortSubject: new Subject<void>(),
     progressSubject: new Subject<ChunkProgress>(),
-    controlSubject: new Subject<boolean>()
+    controlSubject: new Subject<boolean>(),
+    errorSubject: new Subject<boolean>()
   }
 }
 
@@ -178,7 +179,7 @@ const createAction = (action: string) => (payload) => ({ action: `upload/${actio
 
 export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubjects = createControlSubjects()) => {
 
-  const { startSubject, retrySubject, abortSubject, progressSubject, controlSubject } = controlSubjects
+  const { startSubject, retrySubject, abortSubject, progressSubject, controlSubject, errorSubject } = controlSubjects
 
   const cleanUp = () => {
     retrySubject.complete()
@@ -191,6 +192,8 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     progressSubject.unsubscribe()
     startSubject.complete()
     startSubject.unsubscribe()
+    errorSubject.complete()
+    errorSubject.unsubscribe()
   }
 
   const [ pause$, resume$ ] = controlSubject.distinctUntilChanged().partition((b) => b)
@@ -244,7 +247,10 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
   )
     .retryWhen((e$) => {
       return e$
-        .do(() => retrySubject.next(false))
+        .do((e) => {
+          errorSubject.next(e)
+          retrySubject.next(false)
+        })
         .switchMap((e: Error) => {
           if (e.message === 'Multiple_Chunk_Upload_Error') {
             return retrySubject.filter((b) => b)
@@ -255,6 +261,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     })
     .takeUntil(abortSubject)
     .do(() => {}, cleanUp, cleanUp) // tslint:disable-line
+    .merge(errorSubject.map((e) => createAction('error')(e)))
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))
     .merge(abortSubject.concatMap(() => Observable.of(
       createAction('pausable')(false),

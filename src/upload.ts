@@ -15,15 +15,16 @@ import { post } from './post'
 
 export interface UploadConfig {
   headers?: {}
-  getUploadUrl: () => string
   autoStart?: boolean
+  getUploadUrl: () => string
 }
 
 export const createControlSubjects = () => {
   return {
     startSubject: new Subject<void>(),
     retrySubject: new Subject<boolean>(),
-    abortSubject: new Subject<void>()
+    abortSubject: new Subject<void>(),
+    errorSubject: new Subject<boolean>()
   }
 }
 
@@ -39,7 +40,7 @@ const createFormData = (file: File) => {
 
 export const upload = (file: File, config: UploadConfig, controlSubjects = createControlSubjects()) => {
 
-  const { startSubject, retrySubject, abortSubject } = controlSubjects
+  const { startSubject, retrySubject, abortSubject, errorSubject } = controlSubjects
 
   const cleanUp = () => {
     retrySubject.complete()
@@ -48,6 +49,8 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     abortSubject.unsubscribe()
     startSubject.complete()
     startSubject.unsubscribe()
+    errorSubject.complete()
+    errorSubject.unsubscribe()
   }
 
   const post$ = Observable.never().multicast(
@@ -66,7 +69,10 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
   )
     .retryWhen((e$) => {
       return e$
-        .do(() => retrySubject.next(false))
+        .do((e) => {
+          retrySubject.next(false)
+          errorSubject.next(e)
+        })
         .switchMap(() => retrySubject.filter((b) => b))
     })
 
@@ -78,6 +84,7 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
   )
     .takeUntil(abortSubject)
     .do(() => {}, cleanUp, cleanUp) // tslint:disable-line
+    .merge(errorSubject.map((e) => createAction('error')(e)))
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))
 
   const start = () => {

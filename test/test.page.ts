@@ -170,6 +170,9 @@ const handleUpload = (files$) => {
               expect(finishFileMeta).to.have.property('thumbnailUrl').that.is.a('string')
             }))
             break
+          case 'upload/start':
+            console.error(payload)
+            break
           default:
             break
         }
