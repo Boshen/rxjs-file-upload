@@ -87,7 +87,9 @@ chunkTests.forEach((chunks) => {
 
         const { upload$ } = chunkUpload(file, config)
         upload$
-          .filter((d) => ['upload/start', 'upload/progress', 'upload/finish'].indexOf(d.action) >= 0)
+          .filter((d) => {
+            return ['upload/start', 'upload/progress', 'upload/finish'].indexOf(d['action']) >= 0
+          })
           .subscribe(spy)
 
         server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
@@ -106,7 +108,7 @@ chunkTests.forEach((chunks) => {
         const progress = sinon.spy()
 
         const { upload$ } = chunkUpload(file, config)
-        upload$.filter((d) => d.action === 'upload/progress').subscribe(progress)
+        upload$.filter((d) => d['action'] === 'upload/progress').subscribe(progress)
 
         server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
         for (let i = 1; i < chunks.length + 1; i++) {
@@ -128,7 +130,7 @@ chunkTests.forEach((chunks) => {
         const progress = sinon.spy()
 
         const { pause, resume, upload$ } = chunkUpload(file, config)
-        upload$.filter((d) => d.action === 'upload/progress').subscribe(progress)
+        upload$.filter((d) => d['action'] === 'upload/progress').subscribe(progress)
 
         server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
         server.requests[1].upload.onprogress({ loaded: 0.1, total: fileMeta.chunkSize })
@@ -151,7 +153,7 @@ chunkTests.forEach((chunks) => {
         const start = sinon.spy()
 
         const { pause, resume, upload$ } = chunkUpload(file, config)
-        upload$.filter((d) => d.action === 'upload/start').subscribe(start)
+        upload$.filter((d) => d['action'] === 'upload/start').subscribe(start)
 
         pause()
         resume()
@@ -162,11 +164,11 @@ chunkTests.forEach((chunks) => {
         expect(start.callCount).to.equal(1)
       })
 
-      it('should not resend upload/start when retry', () => {
+      it('should resend upload/start when retry', () => {
         const start = sinon.spy()
 
         const { retry, upload$ } = chunkUpload(file, config)
-        upload$.filter((d) => d.action === 'upload/start').subscribe(start)
+        upload$.filter((d) => d['action'] === 'upload/start').subscribe(start)
 
         server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
         for (let i = 1; i < maxErrorsToRetry(chunks.length) + 1; i++) {
@@ -177,7 +179,7 @@ chunkTests.forEach((chunks) => {
         server.respondImmediately = true
         server.respond()
 
-        expect(start.callCount).to.equal(1)
+        expect(start.callCount).to.equal(2)
       })
 
       it('should error if ajax errors', () => {

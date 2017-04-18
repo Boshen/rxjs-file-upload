@@ -16,7 +16,7 @@ import { post } from './post'
 export interface UploadConfig {
   headers?: {}
   getUploadUrl: () => string
-  autoStart: boolean
+  autoStart?: boolean
 }
 
 export const createControlSubjects = () => {

@@ -58,7 +58,7 @@ export interface UploadChunksConfig {
   getChunkStartUrl: () => string
   getChunkUrl: (fileMeta: FileMeta, index: number) => string
   getChunkFinishUrl: (fileMeta: FileMeta) => string
-  autoStart: boolean
+  autoStart?: boolean
 }
 
 export interface ChunkStatus {
@@ -203,17 +203,6 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
       return uploadAllChunks(chunks, fileMeta, progressSubject, config)
         .takeUntil(pause$)
         .repeatWhen(() => resume$)
-        .retryWhen((e$) => {
-          return e$
-            .do(() => retrySubject.next(false))
-            .switchMap((e: Error) => {
-              if (e.message === 'Multiple_Chunk_Upload_Error') {
-                return retrySubject.filter((b) => b)
-              } else {
-                return Observable.throw(e)
-              }
-            })
-        })
     })
     .take(1)
 
@@ -253,6 +242,17 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     Observable.of(createAction('pausable')(false)),
     Observable.of(createAction('retryable')(false))
   )
+    .retryWhen((e$) => {
+      return e$
+        .do(() => retrySubject.next(false))
+        .switchMap((e: Error) => {
+          if (e.message === 'Multiple_Chunk_Upload_Error') {
+            return retrySubject.filter((b) => b)
+          } else {
+            return Observable.throw(e)
+          }
+        })
+    })
     .takeUntil(abortSubject)
     .do(() => {}, cleanUp, cleanUp) // tslint:disable-line
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))
