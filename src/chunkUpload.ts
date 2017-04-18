@@ -58,6 +58,7 @@ export interface UploadChunksConfig {
   getChunkStartUrl: () => string
   getChunkUrl: (fileMeta: FileMeta, index: number) => string
   getChunkFinishUrl: (fileMeta: FileMeta) => string
+  autoStart: boolean
 }
 
 export interface ChunkStatus {
@@ -165,6 +166,7 @@ export const uploadAllChunks = (
 
 export const createControlSubjects = () => {
   return {
+    startSubject: new Subject<void>(),
     retrySubject: new Subject<boolean>(),
     abortSubject: new Subject<void>(),
     progressSubject: new Subject<ChunkProgress>(),
@@ -176,17 +178,19 @@ const createAction = (action: string) => (payload) => ({ action: `upload/${actio
 
 export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubjects = createControlSubjects()) => {
 
-  const { retrySubject, abortSubject, progressSubject, controlSubject } = controlSubjects
+  const { startSubject, retrySubject, abortSubject, progressSubject, controlSubject } = controlSubjects
 
   const cleanUp = () => {
     retrySubject.complete()
-    abortSubject.complete()
-    progressSubject.complete()
-    controlSubject.complete()
     retrySubject.unsubscribe()
+    abortSubject.complete()
     abortSubject.unsubscribe()
-    progressSubject.unsubscribe()
+    controlSubject.complete()
     controlSubject.unsubscribe()
+    progressSubject.complete()
+    progressSubject.unsubscribe()
+    startSubject.complete()
+    startSubject.unsubscribe()
   }
 
   const [ pause$, resume$ ] = controlSubject.distinctUntilChanged().partition((b) => b)
@@ -238,6 +242,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     })
 
   const upload$ = Observable.concat(
+    startSubject,
     Observable.of(createAction('pausable')(true)),
     Observable.of(createAction('retryable')(false)),
 
@@ -249,18 +254,30 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     Observable.of(createAction('retryable')(false))
   )
     .takeUntil(abortSubject)
-    .do(() => {}, cleanUp, cleanUp)
+    .do(() => {}, cleanUp, cleanUp) // tslint:disable-line
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))
     .merge(abortSubject.concatMap(() => Observable.of(
       createAction('pausable')(false),
       createAction('retryable')(false)
     )))
 
+  const start = () => {
+    if (!startSubject.closed) {
+      startSubject.next()
+      startSubject.complete()
+    }
+  }
+
+  if (config.autoStart === undefined ? true : config.autoStart) {
+    start()
+  }
+
   return {
     pause: () => { if (!controlSubject.closed) { controlSubject.next(true) } },
     resume: () => { if (!controlSubject.closed) { controlSubject.next(false) } },
     retry: () => { if (!retrySubject.closed) { retrySubject.next(true) } },
     abort: () => { if (!abortSubject.closed) { abortSubject.next() } },
+    start,
 
     upload$
   }

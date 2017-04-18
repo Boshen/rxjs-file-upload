@@ -16,10 +16,12 @@ import { post } from './post'
 export interface UploadConfig {
   headers?: {}
   getUploadUrl: () => string
+  autoStart: boolean
 }
 
 export const createControlSubjects = () => {
   return {
+    startSubject: new Subject<void>(),
     retrySubject: new Subject<boolean>(),
     abortSubject: new Subject<void>()
   }
@@ -37,13 +39,15 @@ const createFormData = (file: File) => {
 
 export const upload = (file: File, config: UploadConfig, controlSubjects = createControlSubjects()) => {
 
-  const { retrySubject, abortSubject } = controlSubjects
+  const { startSubject, retrySubject, abortSubject } = controlSubjects
 
   const cleanUp = () => {
     retrySubject.complete()
-    abortSubject.complete()
     retrySubject.unsubscribe()
+    abortSubject.complete()
     abortSubject.unsubscribe()
+    startSubject.complete()
+    startSubject.unsubscribe()
   }
 
   const post$ = Observable.never().multicast(
@@ -67,17 +71,30 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     })
 
   const upload$ = Observable.concat(
+    startSubject,
     Observable.of(createAction('retryable')(false)),
     Observable.of(createAction('start')(null)),
     post$,
   )
     .takeUntil(abortSubject)
-    .do(() => {}, cleanUp, cleanUp)
+    .do(() => {}, cleanUp, cleanUp) // tslint:disable-line
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))
+
+  const start = () => {
+    if (!startSubject.closed) {
+      startSubject.next()
+      startSubject.complete()
+    }
+  }
+
+  if (config.autoStart === undefined ? true : config.autoStart) {
+    start()
+  }
 
   return {
     retry: () => { if (!retrySubject.closed) { retrySubject.next(true) } },
     abort: () => { if (!abortSubject.closed) { abortSubject.next() } },
+    start,
 
     upload$
   }
