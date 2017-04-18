@@ -59,7 +59,7 @@ const handleUpload = (files$) => {
       expect(file).to.be.instanceof(Blob)
     }))
 
-    const list = document.getElementById('list')
+    const list = document.getElementById('list')!
     const li = document.createElement('li')
     const $name = document.createElement('h1')
     $name.innerText = file.name
@@ -189,42 +189,42 @@ const handleUpload = (files$) => {
 }
 
 handleUpload(
-  handleClick(document.getElementById('click1'))
+  handleClick(document.getElementById('click1')!)
 )
 
 handleUpload(
-  handleClick(document.getElementById('click2'), {
+  handleClick(document.getElementById('click2')!, {
     multiple: true,
     accept: 'image/*'
   })
 )
 
 handleUpload(
-  handleClick(document.getElementById('click3'), {
+  handleClick(document.getElementById('click3')!, {
     directory: true
   })
 )
 
 handleUpload(
-  handlePaste(document.getElementById('paste'))
+  handlePaste(document.getElementById('paste')!)
 )
 
 handleUpload(
-  handleDrop(document.getElementById('drop1'), {
+  handleDrop(document.getElementById('drop1')!, {
     onDrop: console.log.bind(console, 'on drop 1'),
     onHover: console.log.bind(console, 'on hover 1')
   })
 )
 
 handleUpload(
-  handleDrop(document.getElementById('drop2'), {
+  handleDrop(document.getElementById('drop2')!, {
     directory: true,
     onDrop: console.log.bind(console, 'on drop 2'),
     onHover: console.log.bind(console, 'on hover 2')
   })
 )
 
-const testButton = document.getElementById('test')
+const testButton = document.getElementById('test')!
 Observable.fromEvent(testButton, 'click').take(1).subscribe(() => {
   let mochaDiv = document.createElement('div')
   mochaDiv.id = 'mocha'
