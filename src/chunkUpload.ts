@@ -113,10 +113,6 @@ export const finishChunkUpload = (fileMeta: FileMeta, config: UploadChunksConfig
   })
 }
 
-export const maxErrorsToRetry = (chunks: number) => {
-  return chunks > 3 ? 3 : 1
-}
-
 export const uploadAllChunks = (
   chunks: Blob[],
   fileMeta: FileMeta,
@@ -152,7 +148,7 @@ export const uploadAllChunks = (
     .mergeScan((acc: ChunkScan, cs: ChunkStatus) => {
       acc[cs.completed ? 'completes' : 'errors'][cs.index] = true
       const errorsCount = Object.keys(acc.errors).length
-      if (errorsCount >= maxErrorsToRetry(chunks.length)) {
+      if (errorsCount) {
         acc.errors = {}
         return Observable.throw(new Error('Multiple_Chunk_Upload_Error'))
       } else {

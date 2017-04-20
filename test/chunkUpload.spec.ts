@@ -14,7 +14,6 @@ import {
   startChunkUpload,
   finishChunkUpload,
   chunkUpload,
-  maxErrorsToRetry,
   createControlSubjects
 } from '../src/chunkUpload'
 
@@ -171,9 +170,7 @@ chunkTests.forEach((chunks) => {
         upload$.filter((d) => d['action'] === 'upload/start').subscribe(start)
 
         server.requests[0].respond(200, {}, JSON.stringify(fileMeta))
-        for (let i = 1; i < maxErrorsToRetry(chunks.length) + 1; i++) {
-          server.requests[i].respond(400)
-        }
+        server.requests[1].respond(400)
         retry()
 
         server.respondImmediately = true
@@ -458,38 +455,6 @@ chunkTests.forEach((chunks) => {
           for (let i = 1; i < chunks.length; i++) {
             expect(server.requests[i + 3].readyState).to.equal(4)
             expect(server.requests[i + 3].url).to.equal(config.getChunkUrl(fileMeta, i))
-          }
-        })
-
-        it('should be able to retry after 3 errors', () => {
-          const { retry, upload$ } = chunkUpload(file, config)
-          upload$.subscribe()
-
-          server.requests[0].respond(404)
-          server.requests[1].respond(404)
-          server.requests[2].respond(404)
-
-          expect(server.requests.length).to.equal(5)
-          for(let i = 0; i < 3; i++) {
-            expect(server.requests[i].readyState).to.equal(4)
-            expect(server.requests[i].status).to.equal(404)
-            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
-          }
-          for(let i = 3; i < 5; i++) {
-            expect(server.requests[i].readyState).to.equal(0)
-            expect(server.requests[i].url).to.equal(config.getChunkUrl(fileMeta, i))
-          }
-
-          server.respondImmediately = true
-          server.respond()
-
-          retry()
-
-          expect(server.requests.length).to.equal(chunks.length + 5)
-          for(let i = 0; i < chunks.length; i++) {
-            expect(server.requests[i + 5].url).to.equal(config.getChunkUrl(fileMeta, i))
-            expect(server.requests[i + 5].status).to.equal(200)
-            expect(server.requests[i + 5].readyState).to.equal(4)
           }
         })
 
