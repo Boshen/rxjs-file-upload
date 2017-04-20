@@ -20,8 +20,8 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
   }
 
   const file$ = Observable.create((obs) => {
-    globalInputButton.multiple = config.multiple || true
     globalInputButton.accept = config.accept || ''
+    globalInputButton.multiple = config.directory || config.multiple || false
     globalInputButton.webkitdirectory = config.directory || false
     globalInputButton.value = null
     globalInputButton.onchange = (e) => {
