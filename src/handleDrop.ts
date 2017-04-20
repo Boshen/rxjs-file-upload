@@ -24,10 +24,6 @@ const createDropFolderInput = (input, container) => {
   input.style.zIndex = 10000
   input.onclick = null
   container.appendChild(input)
-  return () => {
-    container.removeChild(input)
-    input.remove()
-  }
 }
 
 const getFiles = (e) => {
@@ -76,7 +72,7 @@ export const handleDrop = (
 
       if (options.directory) {
         const dropFolderInput = document.createElement('input')
-        const removeInput = createDropFolderInput(dropFolderInput, dropElement)
+        createDropFolderInput(dropFolderInput, dropElement)
         let changed = false
         dropFolderInput.onchange = (e) => {
           changed = true
@@ -93,8 +89,7 @@ export const handleDrop = (
             if (!changed && files.length === 0) {
               obs.next([])
             }
-            removeInput()
-          }, 50)
+          }, 300)
         }
       } else {
         dropElement.ondragleave = dragleave(null)
