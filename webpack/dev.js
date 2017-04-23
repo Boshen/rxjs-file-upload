@@ -7,18 +7,10 @@ module.exports = {
     './test/test.page'
   ],
 
-  output: {
-    filename: '[name].js',
-    path: path.resolve(__dirname, 'dist')
-  },
-
   resolve: {
     extensions: [
       '.ts',
       '.js'
-    ],
-    modules: [
-      './node_modules'
     ]
   },
 

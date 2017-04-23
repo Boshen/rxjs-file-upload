@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "declaration": true,
+    "declaration": false,
     "emitDecoratorMetadata": false,
     "experimentalDecorators": false,
     "importHelpers": true,
@@ -12,10 +12,9 @@
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "outDir": "dist",
     "removeComments": true,
     "rootDir": "src",
-    "sourceMap": true,
+    "sourceMap": false,
     "strictNullChecks": true,
     "target": "ES5"
   },
