@@ -12,6 +12,7 @@ import 'rxjs/add/operator/retryWhen'
 import 'rxjs/add/operator/takeUntil'
 
 import { post } from './post'
+import { createAction } from './util'
 
 export interface UploadConfig {
   headers?: {}
@@ -19,7 +20,7 @@ export interface UploadConfig {
   getUploadUrl: () => string
 }
 
-export const createControlSubjects = () => {
+export const createUploadSubjects = () => {
   return {
     startSubject: new Subject<void>(),
     retrySubject: new Subject<boolean>(),
@@ -27,8 +28,6 @@ export const createControlSubjects = () => {
     errorSubject: new Subject<boolean>()
   }
 }
-
-const createAction = (action: string) => (payload) => ({ action: `upload/${action}`, payload })
 
 const createFormData = (file: File) => {
   const formData = new FormData()
@@ -38,7 +37,7 @@ const createFormData = (file: File) => {
   return formData
 }
 
-export const upload = (file: File, config: UploadConfig, controlSubjects = createControlSubjects()) => {
+export const upload = (file: File, config: UploadConfig, controlSubjects = createUploadSubjects()) => {
 
   const { startSubject, retrySubject, abortSubject, errorSubject } = controlSubjects
 

@@ -28,6 +28,7 @@ import 'rxjs/add/operator/take'
 import 'rxjs/add/operator/takeUntil'
 
 import { post } from './post'
+import { createAction } from './util'
 
 export interface FileMeta {
   chunkSize: number
@@ -160,7 +161,7 @@ export const uploadAllChunks = (
     })
 }
 
-export const createControlSubjects = () => {
+export const createChunkUploadSubjects = () => {
   return {
     startSubject: new Subject<void>(),
     retrySubject: new Subject<boolean>(),
@@ -171,9 +172,7 @@ export const createControlSubjects = () => {
   }
 }
 
-const createAction = (action: string) => (payload) => ({ action: `upload/${action}`, payload })
-
-export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubjects = createControlSubjects()) => {
+export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubjects = createChunkUploadSubjects()) => {
 
   const { startSubject, retrySubject, abortSubject, progressSubject, controlSubject, errorSubject } = controlSubjects
 
