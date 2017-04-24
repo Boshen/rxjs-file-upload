@@ -19,8 +19,6 @@ import 'rxjs/add/operator/catch'
 
 import { upload, chunkUpload, handleClick, handlePaste, handleDrop } from '../src'
 
-const HOST = 'http://striker.project.ci'
-
 const preventDefault = (e) => {
   if (e.target.nodeName === 'INPUT' && e.target.type === 'file') {
     return
@@ -32,21 +30,36 @@ window.addEventListener('dragenter', preventDefault)
 window.addEventListener('drop', preventDefault)
 window.addEventListener('dragover', preventDefault)
 
-const uploadConfig = {
-  headers: {
-    Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI1NWQyNWZiODIwYzc1OTlhMDExMzBkOGEiLCJleHAiOjE0OTEwMjgwNTQsInN0b3JhZ2UiOiJkZWZhdWx0In0.C48F9E9DPEOjsn6Yw4nLKQZriU26jEmKdN0eXvdGQaM' // tslint:disable-line
-  },
-  getUploadUrl: () => {
-    return `${HOST}/upload`
-  },
-  getChunkStartUrl: () => {
-    return `${HOST}/upload/chunk`
-  },
-  getChunkUrl: (fileMeta, i) => {
-    return `${HOST}/upload/chunk/${fileMeta.fileKey}?chunk=${i + 1}&chunks=${fileMeta.chunks}`
-  },
-  getChunkFinishUrl: (fileMeta) => {
-    return `${HOST}/upload/chunk/${fileMeta.fileKey}`
+const hostInput = <HTMLInputElement>document.getElementById('host')!
+hostInput.value = window.localStorage.getItem('hostInput') || 'http://striker.project.ci'
+hostInput.onkeydown = (e: KeyboardEvent) => {
+  window.localStorage.setItem('hostInput', (<HTMLInputElement>e.target).value)
+}
+const authInput = <HTMLInputElement>document.getElementById('auth')!
+authInput.value = window.localStorage.getItem('authInput') || ''
+authInput.onkeydown = (e: KeyboardEvent) => {
+  window.localStorage.setItem('authInput', (<HTMLInputElement>e.target).value)
+}
+
+const getUploadConfig = () => {
+  const host = hostInput.value
+  const auth = authInput.value
+  return {
+    headers: {
+      Authorization: auth
+    },
+    getUploadUrl: () => {
+      return `${host}/upload`
+    },
+    getChunkStartUrl: () => {
+      return `${host}/upload/chunk`
+    },
+    getChunkUrl: (fileMeta, i) => {
+      return `${host}/upload/chunk/${fileMeta.fileKey}?chunk=${i + 1}&chunks=${fileMeta.chunks}`
+    },
+    getChunkFinishUrl: (fileMeta) => {
+      return `${host}/upload/chunk/${fileMeta.fileKey}`
+    }
   }
 }
 
@@ -79,7 +92,7 @@ const handleUpload = (files$) => {
     list.appendChild(li)
 
     const uploadFn: Function = /^image/.test(file.type) ? upload : chunkUpload
-    const { abort, pause, resume, retry, upload$ } = uploadFn(file, uploadConfig)
+    const { abort, pause, resume, retry, upload$ } = uploadFn(file, getUploadConfig())
 
     if (abort) {
       li.appendChild($abort)

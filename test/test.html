@@ -3,37 +3,59 @@
     <meta charset="utf-8">
     <title>File Upload Tests</title>
     <style>
-      section {
-        margin: 20px 100px;
+      body {
+        padding: 40px;
       }
-      li {
-        margin: 10px;
+      main {
+        display: grid;
+        grid-template-columns: 25%;
+        grid-template-rows: 25% auto 25%;
+        grid-gap: 20px;
+        justify-items: stretch;
+        align-items: stretch;
+        justify-content: stretch;
+        align-content: space-evenly;
+      }
+      .drop-zone {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        background-color: yellow;
+      }
+      input {
+        padding: 20px;
       }
     </style>
   </head>
   <body>
+    <main>
+
+      <h1 style="grid-area:1/1/1/2"> Config </h1>
+      <input style="grid-area:1/2/1/3" id="host" type="text" placeholder="Host"></input>
+      <input style="grid-area:1/3/1/5" id="auth" type="text" placeholder="Authorization Header"></input>
+
+      <h1 style="grid-area:2/1/2/2"> Click </h1>
+      <button style="grid-area:2/2/2/2" id="click1">Upload Single File</button>
+      <button style="grid-area:2/3/2/3" id="click2">Upload Multiple Images</button>
+      <button style="grid-area:2/4/2/4" id="click3">Upload Directory</button>
+
+      <h1 style="grid-area:3/1/3/2"> Paste </h1>
+      <input style="grid-area:3/2/3/5" id="paste" type="text"></input>
+
+      <h1 style="grid-area:4/1/4/2"> Drag and Drop </h1>
+      <div style="grid-area:4/2/4/4" id="drop1" class="drop-zone"><div class="inner">Drop Files Here</div></div>
+      <div style="grid-area:4/4/4/4" id="drop2" class="drop-zone"><div class="inner">Drop Folders and Files Here</div></div>
+
+      <h1 style="grid-area:5/1/5/2"> Mocha Test </h1>
+      <button style="grid-area:5/2/5/5" id="test">Test</button>
+
+    </main>
 
     <section>
-      <button id="click1">Upload Single File</button>
-      <button id="click2">Upload Multiple Images</button>
-      <button id="click3">Upload Directory</button>
-    </section>
-
-    <section>
-      <input id="paste" type="text" placeholder="Paste Here"></input>
-    </section>
-
-    <section>
-      <div style="width:100px;height:100px;background-color:yellow" id="drop1"><div class="inner">Drop Files Here</div></div>
-      <div style="width:100px;height:100px;background-color:yellow" id="drop2"><div class="inner">Drop Folders and Files Here</div></div>
-    </section>
-
-    <section>
+      <h1> Test Results </h1>
       <ul id="list"></ul>
-    </section>
-
-    <section>
-      <button id="test">Test</button>
     </section>
 
   </body>
