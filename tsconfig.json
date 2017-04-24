@@ -4,7 +4,7 @@
     "emitDecoratorMetadata": false,
     "experimentalDecorators": false,
     "importHelpers": true,
-    "module": "ES6",
+    "module": "commonjs",
     "moduleResolution": "node",
     "newLine": "LF",
     "noEmitHelpers": true,
