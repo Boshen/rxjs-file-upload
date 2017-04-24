@@ -7,7 +7,7 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack/dev.js",
     "page": "rm -rf page && webpack --config webpack/page.js",
-    "deploy": "gh-pages -d page",
+    "deploy": "yarn run page && gh-pages -d page",
     "watch": "karma start",
     "test": "karma start --single-run",
     "build": "rm -rf dist && tsc",
