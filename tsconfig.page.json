@@ -14,7 +14,7 @@
     "noUnusedParameters": true,
     "removeComments": true,
     "rootDir": "src",
-    "sourceMap": false,
+    "sourceMap": true,
     "strictNullChecks": true,
     "target": "ES5"
   },

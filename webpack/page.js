@@ -1,15 +1,19 @@
 const webpack = require('webpack')
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const ChunkManifestPlugin = require("chunk-manifest-webpack-plugin")
+const WebpackChunkHash = require("webpack-chunk-hash")
 
 module.exports = {
 
   entry: {
+    common: './test/common.page.ts',
     bundle: './test/test.page'
   },
 
   output: {
     filename: '[name].[chunkhash:8].js',
+    chunkFilename: "[name].[chunkhash:8].js",
     path: path.resolve(__dirname, '../page')
   },
 
@@ -55,19 +59,34 @@ module.exports = {
       template: './test/test.html'
     }),
 
-    new webpack.optimize.UglifyJsPlugin({
-      mangle: {
-        screw_ie8: true
-      },
-      compress: {
-        screw_ie8: true,
-        dead_code: true,
-        warnings: false
-      },
-      beautify: false,
-      sourceMap: false,
-      comments: false
-    })
+    new webpack.optimize.CommonsChunkPlugin({
+      names: ['common', 'manifest'],
+      minChunks: Infinity
+    }),
+
+    new ChunkManifestPlugin({
+      filename: "chunk-manifest.json",
+      manifestVariable: "webpackManifest"
+    }),
+
+    new webpack.HashedModuleIdsPlugin(),
+
+    new WebpackChunkHash(),
+
+
+    // new webpack.optimize.UglifyJsPlugin({
+      // mangle: {
+        // screw_ie8: true
+      // },
+      // compress: {
+        // screw_ie8: true,
+        // dead_code: true,
+        // warnings: false
+      // },
+      // beautify: false,
+      // sourceMap: true,
+      // comments: false
+    // })
   ]
 
 }
