@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
+import { ReplaySubject } from 'rxjs/ReplaySubject'
 import { Subscriber } from 'rxjs/Subscriber'
 
 import 'rxjs/add/observable/concat'
@@ -163,7 +164,7 @@ export const uploadAllChunks = (
 
 export const createChunkUploadSubjects = () => {
   return {
-    startSubject: new Subject(),
+    startSubject: new ReplaySubject(1),
     retrySubject: new Subject<boolean>(),
     abortSubject: new Subject(),
     progressSubject: new Subject<ChunkProgress>(),
@@ -229,11 +230,11 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     })
 
   const upload$ = Observable.concat(
-    startSubject,
+    startSubject.take(1).map(createAction('start')),
     Observable.of(createAction('pausable')(true)),
     Observable.of(createAction('retryable')(false)),
 
-    start$.map(createAction('start')),
+    start$.map(createAction('chunkstart')),
     progress$,
     finish$.map(createAction('finish')),
 
@@ -265,8 +266,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
 
   const start = () => {
     if (!startSubject.closed) {
-      startSubject.next()
-      startSubject.complete()
+      startSubject.next({})
     }
   }
 

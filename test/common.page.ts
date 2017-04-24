@@ -7,6 +7,9 @@ import 'tslib'
 import 'fileapi/dist/FileAPI.html5'
 
 import 'rxjs/Observable'
+import 'rxjs/Subject'
+import 'rxjs/ReplaySubject'
+import 'rxjs/Subscriber'
 import 'rxjs/observable/dom/AjaxObservable'
 
 import 'rxjs/add/observable/concat'

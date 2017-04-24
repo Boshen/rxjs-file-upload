@@ -14,7 +14,7 @@ import {
   startChunkUpload,
   finishChunkUpload,
   chunkUpload,
-  createControlSubjects
+  createChunkUploadSubjects
 } from '../src/chunkUpload'
 
 const config = {
@@ -81,13 +81,13 @@ chunkTests.forEach((chunks) => {
         expect(server.requests[chunks.length + 1].status).to.equal(200)
       })
 
-      it('should push start fileMeta, progress then finish fileMeta', () => {
+      it('should push progress then finish fileMeta', () => {
         const spy = sinon.spy()
 
         const { upload$ } = chunkUpload(file, config)
         upload$
           .filter((d) => {
-            return ['upload/start', 'upload/progress', 'upload/finish'].indexOf(d['action']) >= 0
+            return ['upload/progress', 'upload/finish'].indexOf(d['action']) >= 0
           })
           .subscribe(spy)
 
@@ -97,10 +97,9 @@ chunkTests.forEach((chunks) => {
         server.respondImmediately = true
         server.respond()
 
-        expect(spy.callCount).to.equal(3)
-        expect(spy.getCall(0).args[0]).to.eql({ action: 'upload/start', payload: fileMeta })
-        expect(spy.getCall(1).args[0]).to.eql({ action: 'upload/progress', payload: 1 / fileMeta.fileSize})
-        expect(spy.getCall(2).args[0]).to.eql({ action: 'upload/finish', payload: fileMeta })
+        expect(spy.callCount).to.equal(2)
+        expect(spy.getCall(0).args[0]).to.eql({ action: 'upload/progress', payload: 1 / fileMeta.fileSize})
+        expect(spy.getCall(1).args[0]).to.eql({ action: 'upload/finish', payload: fileMeta })
       })
 
       it('should report progress', () => {
@@ -213,7 +212,7 @@ chunkTests.forEach((chunks) => {
     describe('memory', () => {
 
       it('should not leak when complete', () => {
-        const subjects = createControlSubjects()
+        const subjects = createChunkUploadSubjects()
         const { upload$ } = chunkUpload(file, config, subjects)
         upload$.subscribe()
         server.respondImmediately = true
@@ -226,7 +225,7 @@ chunkTests.forEach((chunks) => {
 
       it('should not leak when error', () => {
         const error = sinon.spy()
-        const subjects = createControlSubjects()
+        const subjects = createChunkUploadSubjects()
         const { upload$ } = chunkUpload(file, config, subjects)
         upload$.subscribe(null, error)
         server.requests[0].respond(401)

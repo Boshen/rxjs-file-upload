@@ -1,5 +1,7 @@
 import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
+import { ReplaySubject } from 'rxjs/ReplaySubject'
+import { Subscriber } from 'rxjs/Subscriber'
 
 import 'rxjs/add/observable/never'
 import 'rxjs/add/observable/concat'
@@ -22,9 +24,10 @@ export interface UploadConfig {
 
 export const createUploadSubjects = () => {
   return {
-    startSubject: new Subject(),
+    startSubject: new ReplaySubject(1),
     retrySubject: new Subject<boolean>(),
     abortSubject: new Subject(),
+    progressSubject: new Subject<number>(),
     errorSubject: new Subject<boolean>()
   }
 }
@@ -39,7 +42,7 @@ const createFormData = (file: File) => {
 
 export const upload = (file: File, config: UploadConfig, controlSubjects = createUploadSubjects()) => {
 
-  const { startSubject, retrySubject, abortSubject, errorSubject } = controlSubjects
+  const { startSubject, retrySubject, abortSubject, progressSubject, errorSubject } = controlSubjects
 
   const cleanUp = () => {
     retrySubject.complete()
@@ -48,48 +51,46 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     abortSubject.unsubscribe()
     startSubject.complete()
     startSubject.unsubscribe()
+    progressSubject.complete()
+    progressSubject.unsubscribe()
     errorSubject.complete()
     errorSubject.unsubscribe()
   }
 
-  const post$ = Observable.never().multicast(
-    () => new Subject(),
-    (subject) => subject
-      .map((pe: ProgressEvent) => createAction('progress')(pe.loaded / pe.total))
-      .merge(post({
-        url: config.getUploadUrl(),
-        body: createFormData(file),
-        headers: {
-          ...config.headers,
-        },
-        progressSubscriber: <any>subject // tslint:disable-line
+  const post$ = post({
+    url: config.getUploadUrl(),
+    body: createFormData(file),
+    headers: {
+      ...config.headers,
+    },
+    progressSubscriber: Subscriber.create((pe: ProgressEvent) => {
+      progressSubject.next(pe.loaded / pe.total)
+    }, () => {}) // tslint:disable-line
+  })
+  .map(createAction('finish'))
+  .retryWhen((e$) => {
+    return e$
+      .do((e) => {
+        retrySubject.next(false)
+        errorSubject.next(e)
       })
-      .map(createAction('finish')))
-  )
-    .retryWhen((e$) => {
-      return e$
-        .do((e) => {
-          retrySubject.next(false)
-          errorSubject.next(e)
-        })
-        .switchMap(() => retrySubject.filter((b) => b))
-    })
+      .switchMap(() => retrySubject.filter((b) => b))
+  })
 
   const upload$ = Observable.concat(
-    startSubject,
+    startSubject.take(1).map(createAction('start')),
     Observable.of(createAction('retryable')(false)),
-    Observable.of(createAction('start')(null)),
-    post$,
+    post$
   )
     .takeUntil(abortSubject)
     .do(() => {}, cleanUp, cleanUp) // tslint:disable-line
+    .merge(progressSubject.map(createAction('progress')))
     .merge(errorSubject.map((e) => createAction('error')(e)))
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))
 
   const start = () => {
     if (!startSubject.closed) {
-      startSubject.next()
-      startSubject.complete()
+      startSubject.next({})
     }
   }
 
