@@ -10,7 +10,7 @@
     "deploy": "yarn run page && gh-pages -d page",
     "watch": "karma start",
     "test": "karma start --single-run",
-    "publish_all": "yarn run page && cp README.md package.json ./dist && yarn publish dist"
+    "publish_all": "yarn run page && yarn version && cp README.md package.json ./dist && cd dist && yarn publish"
   },
   "peerDependencies": {
     "rxjs": "^5.3.0",
