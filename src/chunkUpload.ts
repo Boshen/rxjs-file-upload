@@ -163,9 +163,9 @@ export const uploadAllChunks = (
 
 export const createChunkUploadSubjects = () => {
   return {
-    startSubject: new Subject<void>(),
+    startSubject: new Subject(),
     retrySubject: new Subject<boolean>(),
-    abortSubject: new Subject<void>(),
+    abortSubject: new Subject(),
     progressSubject: new Subject<ChunkProgress>(),
     controlSubject: new Subject<boolean>(),
     errorSubject: new Subject<boolean>()

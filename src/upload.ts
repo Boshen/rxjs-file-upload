@@ -22,9 +22,9 @@ export interface UploadConfig {
 
 export const createUploadSubjects = () => {
   return {
-    startSubject: new Subject<void>(),
+    startSubject: new Subject(),
     retrySubject: new Subject<boolean>(),
-    abortSubject: new Subject<void>(),
+    abortSubject: new Subject(),
     errorSubject: new Subject<boolean>()
   }
 }
