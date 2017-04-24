@@ -1,6 +1,6 @@
 {
   "name": "rxjs-file-upload",
-  "version": "0.0.10",
+  "version": "0.0.12",
   "main": "index.js",
   "author": "Boshen Chen <boshenc@gmail.com>",
   "license": "MIT",
