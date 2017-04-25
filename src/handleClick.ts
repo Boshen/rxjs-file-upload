@@ -25,7 +25,11 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
     globalInputButton.webkitdirectory = config.directory || false
     globalInputButton.value = null
     globalInputButton.onchange = (e) => {
-      obs.next(FileAPI.getFiles(e))
+      const files = FileAPI.getFiles(e)
+      files.forEach((file) => {
+        file.path = file.webkitRelativePath
+      })
+      obs.next(files)
       obs.complete()
     }
     globalInputButton.click()
