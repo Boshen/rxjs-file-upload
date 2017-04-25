@@ -30,6 +30,18 @@ __export(__webpack_require__("2HJH"));
 
 /***/ }),
 
+/***/ "7axH":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var Observable_1 = __webpack_require__("rCTf");
+var toArray_1 = __webpack_require__("9PGs");
+Observable_1.Observable.prototype.toArray = toArray_1.toArray;
+//# sourceMappingURL=toArray.js.map
+
+/***/ }),
+
 /***/ "9MNP":
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -52,6 +64,58 @@ exports.post = function (_a) {
         .map(function (r) { return r.response; });
 };
 
+
+/***/ }),
+
+/***/ "9PGs":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+var Subscriber_1 = __webpack_require__("mmVS");
+/**
+ * @return {Observable<any[]>|WebSocketSubject<T>|Observable<T>}
+ * @method toArray
+ * @owner Observable
+ */
+function toArray() {
+    return this.lift(new ToArrayOperator());
+}
+exports.toArray = toArray;
+var ToArrayOperator = (function () {
+    function ToArrayOperator() {
+    }
+    ToArrayOperator.prototype.call = function (subscriber, source) {
+        return source.subscribe(new ToArraySubscriber(subscriber));
+    };
+    return ToArrayOperator;
+}());
+/**
+ * We need this JSDoc comment for affecting ESDoc.
+ * @ignore
+ * @extends {Ignored}
+ */
+var ToArraySubscriber = (function (_super) {
+    __extends(ToArraySubscriber, _super);
+    function ToArraySubscriber(destination) {
+        _super.call(this, destination);
+        this.array = [];
+    }
+    ToArraySubscriber.prototype._next = function (x) {
+        this.array.push(x);
+    };
+    ToArraySubscriber.prototype._complete = function () {
+        this.destination.next(this.array);
+        this.destination.complete();
+    };
+    return ToArraySubscriber;
+}(Subscriber_1.Subscriber));
+//# sourceMappingURL=toArray.js.map
 
 /***/ }),
 
@@ -294,6 +358,7 @@ var Observable_1 = __webpack_require__("rCTf");
 __webpack_require__("UNGF");
 __webpack_require__("UyzR");
 __webpack_require__("jvbR");
+__webpack_require__("7axH");
 var scanFiles = function (entry) {
     if (entry.isFile) {
         return Observable_1.Observable.create(function (observer) {
@@ -316,6 +381,11 @@ var scanFiles = function (entry) {
             });
         }).switch();
     }
+};
+var maybeDirectory = function (file) {
+    return file.type === ''
+        && (file.size % 4096) === 0
+        && (file.size <= 102400);
 };
 exports.handleDrop = function (dropElement, options) {
     if (options === void 0) { options = {}; }
@@ -340,22 +410,33 @@ exports.handleDrop = function (dropElement, options) {
         };
         dropElement.ondrop = function (e) {
             var items = e.dataTransfer.items;
-            for (var i = 0; i < items.length; i++) {
-                var item = items[i].webkitGetAsEntry();
-                if (item) {
-                    scanFiles(item)
-                        .reduce(function (arr, _a) {
-                        var file = _a.file, entry = _a.entry;
-                        file.path = options.directory ? entry.fullPath.slice(1) : '';
-                        arr.push(file);
-                        return arr;
-                    }, [])
-                        .subscribe(function (files) {
-                        onDrop(dropElement, files);
-                        obs.next(files);
-                        e.preventDefault();
-                    });
-                }
+            var files = e.dataTransfer.files;
+            var files$;
+            if (items) {
+                files$ = Observable_1.Observable.from(Array.prototype.slice.call(items))
+                    .filter(function (item) { return !!item; })
+                    .concatMap(function (item) { return scanFiles(item.webkitGetAsEntry()); })
+                    .map(function (_a) {
+                    var file = _a.file, entry = _a.entry;
+                    file.path = options.directory ? entry.fullPath.slice(1) : '';
+                    return file;
+                });
+            }
+            else if (files) {
+                files$ = Observable_1.Observable.from(Array.prototype.slice.call(files))
+                    .filter(function (file) { return !maybeDirectory(file); })
+                    .map(function (file) {
+                    file.path = '';
+                    return file;
+                });
+            }
+            if (files$) {
+                files$.toArray()
+                    .subscribe(function (fs) {
+                    e.preventDefault();
+                    onDrop(dropElement, fs);
+                    obs.next(fs);
+                });
             }
         };
     });
