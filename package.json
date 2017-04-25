@@ -1,6 +1,6 @@
 {
   "name": "rxjs-file-upload",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
   "author": "Boshen Chen <boshenc@gmail.com>",
