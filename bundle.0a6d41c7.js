@@ -359,6 +359,8 @@ __webpack_require__("UNGF");
 __webpack_require__("UyzR");
 __webpack_require__("jvbR");
 __webpack_require__("7axH");
+var userAgent = window.navigator.userAgent;
+var safari = /safari\//i.test(userAgent);
 var scanFiles = function (entry) {
     if (entry.isFile) {
         return Observable_1.Observable.create(function (observer) {
@@ -383,7 +385,8 @@ var scanFiles = function (entry) {
     }
 };
 var maybeDirectory = function (file) {
-    return file.type === ''
+    return !safari
+        && file.type === ''
         && (file.size % 4096) === 0
         && (file.size <= 102400);
 };
