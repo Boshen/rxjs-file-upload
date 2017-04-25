@@ -1,21 +1,31 @@
 webpackJsonp([1],{
 
-/***/ "6sO2":
+/***/ "2HJH":
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var upload_1 = __webpack_require__("cQcD");
-exports.upload = upload_1.upload;
-var chunkUpload_1 = __webpack_require__("hfOd");
-exports.chunkUpload = chunkUpload_1.chunkUpload;
-var handleClick_1 = __webpack_require__("ZG0H");
-exports.handleClick = handleClick_1.handleClick;
-var handlePaste_1 = __webpack_require__("lRq6");
-exports.handlePaste = handlePaste_1.handlePaste;
-var handleDrop_1 = __webpack_require__("UNZf");
-exports.handleDrop = handleDrop_1.handleDrop;
+exports.createAction = function (action) { return function (payload) { return ({ action: "upload/" + action, payload: payload }); }; };
+
+
+/***/ }),
+
+/***/ "6sO2":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(__webpack_require__("cQcD"));
+__export(__webpack_require__("hfOd"));
+__export(__webpack_require__("ZG0H"));
+__export(__webpack_require__("lRq6"));
+__export(__webpack_require__("UNZf"));
+__export(__webpack_require__("2HJH"));
 
 
 /***/ }),
@@ -281,97 +291,73 @@ Observable_1.Observable.fromEvent(testButton, 'click').take(1).subscribe(functio
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Observable_1 = __webpack_require__("rCTf");
-var FileAPI = __webpack_require__("6C8E");
-__webpack_require__("EnA3");
-var createDropFolderInput = function (input, container) {
-    container.style.position = 'relative';
-    input.type = 'file';
-    input.multiple = true;
-    input.webkitdirectory = true;
-    input.value = null;
-    input.style.position = 'absolute';
-    input.style.opacity = '0';
-    input.style.left = '0px';
-    input.style.top = '0px';
-    input.style.width = '100%';
-    input.style.height = '100%';
-    input.style.zIndex = 10000;
-    input.onclick = null;
-    container.appendChild(input);
-};
-var getFiles = function (e) {
-    var entries = FileAPI.getFiles(e);
-    var files = entries.filter(function (file) {
-        return !(!file.type && ((file.size % 4096) === 0 && (file.size <= 102400)));
-    });
-    return files;
+__webpack_require__("UNGF");
+__webpack_require__("UyzR");
+__webpack_require__("jvbR");
+var scanFiles = function (entry) {
+    if (entry.isFile) {
+        return Observable_1.Observable.create(function (observer) {
+            entry.file(function (file) {
+                observer.next({ file: file, entry: entry });
+                observer.complete();
+            });
+        });
+    }
+    else if (entry.isDirectory) {
+        return Observable_1.Observable.create(function (observer) {
+            entry.createReader().readEntries(function (entries) {
+                if (entries.length === 0) {
+                    observer.complete();
+                }
+                else {
+                    observer.next(Observable_1.Observable.from(entries).concatMap(scanFiles));
+                    observer.complete();
+                }
+            });
+        }).switch();
+    }
 };
 exports.handleDrop = function (dropElement, options) {
     if (options === void 0) { options = {}; }
     var onDrop = options.onDrop || (function () { });
     var onHover = options.onHover || (function () { });
-    var count = 0;
     return Observable_1.Observable.create(function (obs) {
+        var enterCount = 0;
+        dropElement.ondragenter = function (e) {
+            enterCount += 1;
+            e.preventDefault();
+            onHover(dropElement, true);
+        };
+        dropElement.ondragleave = function (e) {
+            enterCount -= 1;
+            if (enterCount === 0) {
+                e.preventDefault();
+                onHover(dropElement, false);
+            }
+        };
         dropElement.ondragover = function (e) {
             e.preventDefault();
         };
-        var dragleave = function (cb) { return function (e) {
-            count -= 1;
-            if (count !== 0) {
-                return;
-            }
-            e.preventDefault();
-            onHover(dropElement, false);
-            count = 0;
-            if (cb) {
-                cb();
-            }
-        }; };
-        dropElement.ondragenter = function (enterEvent) {
-            count += 1;
-            if (count - 1 >= 1) {
-                return;
-            }
-            onHover(dropElement, true);
-            enterEvent.preventDefault();
-            if (options.directory) {
-                var dropFolderInput = document.createElement('input');
-                createDropFolderInput(dropFolderInput, dropElement);
-                var changed_1 = false;
-                dropFolderInput.onchange = function (e) {
-                    changed_1 = true;
-                    var files = getFiles(e);
-                    obs.next(files);
-                };
-                dropElement.ondrop = function (e) {
-                    var files = getFiles(e);
-                    if (files.length) {
+        dropElement.ondrop = function (e) {
+            var items = e.dataTransfer.items;
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i].webkitGetAsEntry();
+                if (item) {
+                    scanFiles(item)
+                        .reduce(function (arr, _a) {
+                        var file = _a.file, entry = _a.entry;
+                        file.path = options.directory ? entry.fullPath.slice(1) : '';
+                        arr.push(file);
+                        return arr;
+                    }, [])
+                        .subscribe(function (files) {
+                        onDrop(dropElement, files);
                         obs.next(files);
                         e.preventDefault();
-                    }
-                    setTimeout(function () {
-                        if (!changed_1 && files.length === 0) {
-                            obs.next([]);
-                        }
-                    }, 300);
-                };
-            }
-            else {
-                dropElement.ondragleave = dragleave(null);
-                dropElement.ondrop = function (e) {
-                    var files = getFiles(e);
-                    if (files.length) {
-                        obs.next(files);
-                        e.preventDefault();
-                    }
-                };
+                    });
+                }
             }
         };
-    })
-        .do(function () {
-        count = 0;
-        onDrop(dropElement);
-        onHover(dropElement, false);
     });
 };
 
@@ -401,7 +387,11 @@ exports.handleClick = function (clickElement, config) {
         globalInputButton.webkitdirectory = config.directory || false;
         globalInputButton.value = null;
         globalInputButton.onchange = function (e) {
-            obs.next(FileAPI.getFiles(e));
+            var files = FileAPI.getFiles(e);
+            files.forEach(function (file) {
+                file.path = file.webkitRelativePath;
+            });
+            obs.next(files);
             obs.complete();
         };
         globalInputButton.click();
@@ -425,6 +415,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = __webpack_require__("TToO");
 var Observable_1 = __webpack_require__("rCTf");
 var Subject_1 = __webpack_require__("EEr4");
+var ReplaySubject_1 = __webpack_require__("MQMf");
+var Subscriber_1 = __webpack_require__("mmVS");
 __webpack_require__("9WjZ");
 __webpack_require__("1ZrL");
 __webpack_require__("1APj");
@@ -434,15 +426,16 @@ __webpack_require__("j7ye");
 __webpack_require__("10Gq");
 __webpack_require__("T3fU");
 var post_1 = __webpack_require__("9MNP");
-exports.createControlSubjects = function () {
+var util_1 = __webpack_require__("2HJH");
+exports.createUploadSubjects = function () {
     return {
-        startSubject: new Subject_1.Subject(),
+        startSubject: new ReplaySubject_1.ReplaySubject(1),
         retrySubject: new Subject_1.Subject(),
         abortSubject: new Subject_1.Subject(),
+        progressSubject: new Subject_1.Subject(),
         errorSubject: new Subject_1.Subject()
     };
 };
-var createAction = function (action) { return function (payload) { return ({ action: "upload/" + action, payload: payload }); }; };
 var createFormData = function (file) {
     var formData = new FormData();
     var keys = ['name', 'type', 'size', 'lastModifiedDate'];
@@ -451,8 +444,8 @@ var createFormData = function (file) {
     return formData;
 };
 exports.upload = function (file, config, controlSubjects) {
-    if (controlSubjects === void 0) { controlSubjects = exports.createControlSubjects(); }
-    var startSubject = controlSubjects.startSubject, retrySubject = controlSubjects.retrySubject, abortSubject = controlSubjects.abortSubject, errorSubject = controlSubjects.errorSubject;
+    if (controlSubjects === void 0) { controlSubjects = exports.createUploadSubjects(); }
+    var startSubject = controlSubjects.startSubject, retrySubject = controlSubjects.retrySubject, abortSubject = controlSubjects.abortSubject, progressSubject = controlSubjects.progressSubject, errorSubject = controlSubjects.errorSubject;
     var cleanUp = function () {
         retrySubject.complete();
         retrySubject.unsubscribe();
@@ -460,18 +453,20 @@ exports.upload = function (file, config, controlSubjects) {
         abortSubject.unsubscribe();
         startSubject.complete();
         startSubject.unsubscribe();
+        progressSubject.complete();
+        progressSubject.unsubscribe();
         errorSubject.complete();
         errorSubject.unsubscribe();
     };
-    var post$ = Observable_1.Observable.never().multicast(function () { return new Subject_1.Subject(); }, function (subject) { return subject
-        .map(function (pe) { return createAction('progress')(pe.loaded / pe.total); })
-        .merge(post_1.post({
+    var post$ = post_1.post({
         url: config.getUploadUrl(),
         body: createFormData(file),
         headers: tslib_1.__assign({}, config.headers),
-        progressSubscriber: subject
+        progressSubscriber: Subscriber_1.Subscriber.create(function (pe) {
+            progressSubject.next(pe.loaded / pe.total);
+        }, function () { })
     })
-        .map(createAction('finish'))); })
+        .map(util_1.createAction('finish'))
         .retryWhen(function (e$) {
         return e$
             .do(function (e) {
@@ -480,15 +475,15 @@ exports.upload = function (file, config, controlSubjects) {
         })
             .switchMap(function () { return retrySubject.filter(function (b) { return b; }); });
     });
-    var upload$ = Observable_1.Observable.concat(startSubject, Observable_1.Observable.of(createAction('retryable')(false)), Observable_1.Observable.of(createAction('start')(null)), post$)
+    var upload$ = Observable_1.Observable.concat(startSubject.take(1).map(util_1.createAction('start')), Observable_1.Observable.of(util_1.createAction('retryable')(false)), post$)
         .takeUntil(abortSubject)
         .do(function () { }, cleanUp, cleanUp)
-        .merge(errorSubject.map(function (e) { return createAction('error')(e); }))
-        .merge(retrySubject.map(function (b) { return createAction('retryable')(!b); }));
+        .merge(progressSubject.map(util_1.createAction('progress')))
+        .merge(errorSubject.map(function (e) { return util_1.createAction('error')(e); }))
+        .merge(retrySubject.map(function (b) { return util_1.createAction('retryable')(!b); }));
     var start = function () {
         if (!startSubject.closed) {
-            startSubject.next();
-            startSubject.complete();
+            startSubject.next({});
         }
     };
     if (config.autoStart === undefined ? true : config.autoStart) {
@@ -518,6 +513,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = __webpack_require__("TToO");
 var Observable_1 = __webpack_require__("rCTf");
 var Subject_1 = __webpack_require__("EEr4");
+var ReplaySubject_1 = __webpack_require__("MQMf");
 var Subscriber_1 = __webpack_require__("mmVS");
 __webpack_require__("1ZrL");
 __webpack_require__("zO2v");
@@ -543,6 +539,7 @@ __webpack_require__("uCY4");
 __webpack_require__("hzF8");
 __webpack_require__("T3fU");
 var post_1 = __webpack_require__("9MNP");
+var util_1 = __webpack_require__("2HJH");
 exports.sliceFile = function (file, chunks, chunkSize) {
     var result = [];
     for (var i = 0; i < chunks; i++) {
@@ -608,9 +605,9 @@ exports.uploadAllChunks = function (chunks, fileMeta, progressSubject, config) {
         return Object.keys(acc.completes).length === chunks.length;
     });
 };
-exports.createControlSubjects = function () {
+exports.createChunkUploadSubjects = function () {
     return {
-        startSubject: new Subject_1.Subject(),
+        startSubject: new ReplaySubject_1.ReplaySubject(1),
         retrySubject: new Subject_1.Subject(),
         abortSubject: new Subject_1.Subject(),
         progressSubject: new Subject_1.Subject(),
@@ -618,9 +615,8 @@ exports.createControlSubjects = function () {
         errorSubject: new Subject_1.Subject()
     };
 };
-var createAction = function (action) { return function (payload) { return ({ action: "upload/" + action, payload: payload }); }; };
 exports.chunkUpload = function (file, config, controlSubjects) {
-    if (controlSubjects === void 0) { controlSubjects = exports.createControlSubjects(); }
+    if (controlSubjects === void 0) { controlSubjects = exports.createChunkUploadSubjects(); }
     var startSubject = controlSubjects.startSubject, retrySubject = controlSubjects.retrySubject, abortSubject = controlSubjects.abortSubject, progressSubject = controlSubjects.progressSubject, controlSubject = controlSubjects.controlSubject, errorSubject = controlSubjects.errorSubject;
     var cleanUp = function () {
         retrySubject.complete();
@@ -657,15 +653,15 @@ exports.chunkUpload = function (file, config, controlSubjects) {
         return Object.keys(acc).reduce(function (t, i) { return t + acc[i]; }, 0) / fileMeta.fileSize;
     })
         .distinctUntilChanged(function (x, y) { return x > y; })
-        .map(createAction('progress'))
-        .merge(pause$.concatMap(function () { return Observable_1.Observable.of(createAction('pausable')(false)); }))
-        .merge(resume$.concatMap(function () { return Observable_1.Observable.of(createAction('pausable')(true)); }))
+        .map(util_1.createAction('progress'))
+        .merge(pause$.concatMap(function () { return Observable_1.Observable.of(util_1.createAction('pausable')(false)); }))
+        .merge(resume$.concatMap(function () { return Observable_1.Observable.of(util_1.createAction('pausable')(true)); }))
         .takeUntil(chunks$);
     var finish$ = start$
         .concatMap(function (fileMeta) {
         return exports.finishChunkUpload(fileMeta, config);
     });
-    var upload$ = Observable_1.Observable.concat(startSubject, Observable_1.Observable.of(createAction('pausable')(true)), Observable_1.Observable.of(createAction('retryable')(false)), start$.map(createAction('start')), progress$, finish$.map(createAction('finish')), Observable_1.Observable.of(createAction('pausable')(false)), Observable_1.Observable.of(createAction('retryable')(false)))
+    var upload$ = Observable_1.Observable.concat(startSubject.take(1).map(util_1.createAction('start')), Observable_1.Observable.of(util_1.createAction('pausable')(true)), Observable_1.Observable.of(util_1.createAction('retryable')(false)), start$.map(util_1.createAction('chunkstart')), progress$, finish$.map(util_1.createAction('finish')), Observable_1.Observable.of(util_1.createAction('pausable')(false)), Observable_1.Observable.of(util_1.createAction('retryable')(false)))
         .retryWhen(function (e$) {
         return e$
             .do(function (e) {
@@ -683,13 +679,12 @@ exports.chunkUpload = function (file, config, controlSubjects) {
     })
         .takeUntil(abortSubject)
         .do(function () { }, cleanUp, cleanUp)
-        .merge(errorSubject.map(function (e) { return createAction('error')(e); }))
-        .merge(retrySubject.map(function (b) { return createAction('retryable')(!b); }))
-        .merge(abortSubject.concatMap(function () { return Observable_1.Observable.of(createAction('pausable')(false), createAction('retryable')(false)); }));
+        .merge(errorSubject.map(function (e) { return util_1.createAction('error')(e); }))
+        .merge(retrySubject.map(function (b) { return util_1.createAction('retryable')(!b); }))
+        .merge(abortSubject.concatMap(function () { return Observable_1.Observable.of(util_1.createAction('pausable')(false), util_1.createAction('retryable')(false)); }));
     var start = function () {
         if (!startSubject.closed) {
-            startSubject.next();
-            startSubject.complete();
+            startSubject.next({});
         }
     };
     if (config.autoStart === undefined ? true : config.autoStart) {
