@@ -211,6 +211,8 @@ handleUpload(
 handleUpload(
   handleClick(document.getElementById('click2')!, {
     multiple: true,
+    // the file dialog opens very slowly in chrome
+    // bug https://bugs.chromium.org/p/chromium/issues/detail?id=638874
     accept: 'image/*'
   })
 )

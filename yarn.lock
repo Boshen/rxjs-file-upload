@@ -1435,10 +1435,6 @@ fd-slicer@~1.0.1:
   dependencies:
     pend "~1.2.0"
 
-fileapi@^2.0.21:
-  version "2.0.21"
-  resolved "https://registry.npmjs.org/fileapi/-/fileapi-2.0.21.tgz#e8f01b408005147a8426e9247f7c064b581ded2d"
-
 filename-regex@^2.0.0:
   version "2.0.0"
   resolved "http://registry.npm.taobao.org/filename-regex/download/filename-regex-2.0.0.tgz#996e3e80479b98b9897f15a8a58b3d084e926775"

@@ -17,9 +17,6 @@
     "rxjs": "^5.3.0",
     "tslib": "^1.6.0"
   },
-  "dependencies": {
-    "fileapi": "^2.0.21"
-  },
   "devDependencies": {
     "@types/es6-shim": "^0.31.32",
     "@types/mocha": "^2.2.39",

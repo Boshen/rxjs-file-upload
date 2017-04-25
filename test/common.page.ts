@@ -4,8 +4,6 @@ require('chai')
 
 import 'tslib'
 
-import 'fileapi/dist/FileAPI.html5'
-
 import 'rxjs/Observable'
 import 'rxjs/Subject'
 import 'rxjs/ReplaySubject'
