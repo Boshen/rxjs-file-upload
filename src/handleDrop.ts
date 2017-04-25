@@ -41,16 +41,21 @@ export const handleDrop = (
   const onHover = options.onHover || (() => {}) // tslint:disable-line
 
   return Observable.create((obs) => {
-    dropElement.ondragover = (e) => {
-      e.preventDefault()
-    }
+    let enterCount = 0
     dropElement.ondragenter = (e) => {
+      enterCount += 1
       e.preventDefault()
       onHover(dropElement, true)
     }
     dropElement.ondragleave = (e) => {
+      enterCount -= 1
+      if (enterCount === 0) {
+        e.preventDefault()
+        onHover(dropElement, false)
+      }
+    }
+    dropElement.ondragover = (e) => {
       e.preventDefault()
-      onHover(dropElement, false)
     }
     dropElement.ondrop = (e) => {
       const items = e.dataTransfer.items
