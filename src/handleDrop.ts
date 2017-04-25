@@ -3,6 +3,7 @@ import { Observable } from 'rxjs/Observable'
 import 'rxjs/add/operator/reduce'
 import 'rxjs/add/operator/switch'
 import 'rxjs/add/operator/concatMap'
+import 'rxjs/add/operator/toArray'
 
 export interface HandleDropOptions {
   directory: boolean
@@ -32,6 +33,12 @@ const scanFiles = (entry) => {
   }
 }
 
+const maybeDirectory = (file: File) => {
+  return file.type === ''
+    && (file.size % 4096) === 0
+    && (file.size <= 102400)
+}
+
 export const handleDrop = (
   dropElement: HTMLElement,
   options: Partial<HandleDropOptions> = {}
@@ -42,11 +49,13 @@ export const handleDrop = (
 
   return Observable.create((obs) => {
     let enterCount = 0
+
     dropElement.ondragenter = (e) => {
       enterCount += 1
       e.preventDefault()
       onHover(dropElement, true)
     }
+
     dropElement.ondragleave = (e) => {
       enterCount -= 1
       if (enterCount === 0) {
@@ -54,26 +63,38 @@ export const handleDrop = (
         onHover(dropElement, false)
       }
     }
+
     dropElement.ondragover = (e) => {
       e.preventDefault()
     }
+
     dropElement.ondrop = (e) => {
       const items = e.dataTransfer.items
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i].webkitGetAsEntry()
-        if (item) {
-          scanFiles(item)
-            .reduce((arr, { file, entry }) => {
-              file.path = options.directory ? entry.fullPath.slice(1) : ''
-              arr.push(file)
-              return arr
-            }, [])
-            .subscribe((files) => {
-              onDrop(dropElement, files)
-              obs.next(files)
-              e.preventDefault()
-            })
-        }
+      const files = e.dataTransfer.files
+      let files$
+      if (items) { // chrome, ff, opera
+        files$ = Observable.from(Array.prototype.slice.call(items))
+          .filter((item) => !!item)
+          .concatMap((item: DataTransferItem) => scanFiles(item.webkitGetAsEntry()))
+          .map(({ file, entry }) => {
+            file.path = options.directory ? entry.fullPath.slice(1) : ''
+            return file
+          })
+      } else if (files) {
+        files$ = Observable.from(Array.prototype.slice.call(files))
+          .filter((file: any) => !maybeDirectory(file)) // tslint:disable-line:no-any
+          .map((file: any) => { // tslint:disable-line:no-any
+            file.path = ''
+            return file
+          })
+      }
+      if (files$) {
+        files$.toArray()
+          .subscribe((fs: File[]) => {
+            e.preventDefault()
+            onDrop(dropElement, fs)
+            obs.next(fs)
+          })
       }
     }
   })
