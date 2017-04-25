@@ -20,9 +20,6 @@ import 'rxjs/add/operator/catch'
 import { upload, chunkUpload, handleClick, handlePaste, handleDrop } from '../src'
 
 const preventDefault = (e) => {
-  if (e.target.nodeName === 'INPUT' && e.target.type === 'file') {
-    return
-  }
   e.preventDefault()
 }
 
