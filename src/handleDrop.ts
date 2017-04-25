@@ -96,6 +96,7 @@ export const handleDrop = (
         files$.toArray()
           .subscribe((fs: File[]) => {
             e.preventDefault()
+            onHover(dropElement, false)
             onDrop(dropElement, fs)
             obs.next(fs)
           })
