@@ -5,6 +5,9 @@ import 'rxjs/add/operator/switch'
 import 'rxjs/add/operator/concatMap'
 import 'rxjs/add/operator/toArray'
 
+const userAgent = window.navigator.userAgent
+const safari = /safari\//i.test(userAgent)
+
 export interface HandleDropOptions {
   directory: boolean
   onHover: (e: HTMLElement, hover: boolean) => void
@@ -33,10 +36,9 @@ const scanFiles = (entry) => {
   }
 }
 
+// http://stackoverflow.com/questions/8856628/detecting-folders-directories-in-javascript-filelist-objects
 const maybeDirectory = (file: File) => {
-  return file.type === ''
-    && (file.size % 4096) === 0
-    && (file.size <= 102400)
+  return !file.type && (safari || (file.size % 4096) === 0 && file.size <= 102400)
 }
 
 export const handleDrop = (
