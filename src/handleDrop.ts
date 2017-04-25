@@ -79,7 +79,9 @@ export const handleDrop = (
           .filter((item) => !!item)
           .concatMap((item: DataTransferItem) => scanFiles(item.webkitGetAsEntry()))
           .map(({ file, entry }) => {
-            file.path = options.directory ? entry.fullPath.slice(1) : ''
+            const relativePath = entry.fullPath.slice(1) // e.g. fullPath = `/README.md` or `/dir/README.md`
+            // dropping a single file should give no path info
+            file.path = (options.directory && relativePath !== file.name) ? relativePath : ''
             return file
           })
       } else if (files) {
