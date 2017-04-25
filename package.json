@@ -1,7 +1,8 @@
 {
   "name": "rxjs-file-upload",
   "version": "0.0.24",
-  "main": "./index.js",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
   "author": "Boshen Chen <boshenc@gmail.com>",
   "license": "MIT",
   "scripts": {
@@ -10,8 +11,7 @@
     "deploy": "yarn run page && gh-pages -d page",
     "watch": "karma start",
     "test": "karma start --single-run",
-    "build": "rm -rf dist && tsc",
-    "publish_build": "yarn build && yarn version && cp README.md package.json ./dist && cd dist && yarn publish"
+    "build": "rm -rf dist && tsc"
   },
   "peerDependencies": {
     "rxjs": "^5.3.0",
