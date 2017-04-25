@@ -51,6 +51,7 @@
     "webpack-dev-server": "^2.4.1"
   },
   "files": [
-    "dist"
+    "dist/*",
+    "src/*"
   ]
 }
