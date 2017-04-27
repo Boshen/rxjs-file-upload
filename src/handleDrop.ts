@@ -1,3 +1,4 @@
+// tslint:disable:no-any
 import { Observable } from 'rxjs/Observable'
 
 import 'rxjs/add/operator/reduce'
@@ -71,23 +72,29 @@ export const handleDrop = (
     }
 
     dropElement.ondrop = (e) => {
+      e.preventDefault()
+
       const items = e.dataTransfer.items
       const files = e.dataTransfer.files
       let files$
-      if (items) { // chrome, ff, opera
+      if (items && items.length) {
         files$ = Observable.from(Array.prototype.slice.call(items))
-          .filter((item) => !!item)
-          .concatMap((item: DataTransferItem) => scanFiles(item.webkitGetAsEntry()))
+          .filter((item: any) => {
+            return item && item.kind === 'file' && (item.webkitGetAsEntry || item.getAsEntry)
+          })
+          .concatMap((item: any) => {
+            return scanFiles(item.webkitGetAsEntry ? item.webkitGetAsEntry() : item.getAsEntry())
+          })
           .map(({ file, entry }) => {
             const relativePath = entry.fullPath.slice(1) // e.g. fullPath = `/README.md` or `/dir/README.md`
             // dropping a single file should give no path info
             file.path = (options.directory && relativePath !== file.name) ? relativePath : ''
             return file
           })
-      } else if (files) {
+      } else if (files && files.length) {
         files$ = Observable.from(Array.prototype.slice.call(files))
-          .filter((file: any) => !maybeDirectory(file)) // tslint:disable-line:no-any
-          .map((file: any) => { // tslint:disable-line:no-any
+          .filter((file: any) => !maybeDirectory(file))
+          .map((file: any) => {
             file.path = ''
             return file
           })
@@ -95,7 +102,6 @@ export const handleDrop = (
       if (files$) {
         files$.toArray()
           .subscribe((fs: File[]) => {
-            e.preventDefault()
             onHover(dropElement, false)
             onDrop(dropElement, fs)
             obs.next(fs)
