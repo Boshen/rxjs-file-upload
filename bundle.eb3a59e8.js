@@ -362,7 +362,6 @@ __webpack_require__("UNGF");
 __webpack_require__("UyzR");
 __webpack_require__("jvbR");
 __webpack_require__("7axH");
-var util_1 = __webpack_require__("2HJH");
 var scanFiles = function (entry) {
     if (entry.isFile) {
         return Observable_1.Observable.create(function (observer) {
@@ -434,7 +433,19 @@ exports.handleDrop = function (dropElement, options) {
             }
             else if (files && files.length) {
                 files$ = Observable_1.Observable.from(Array.prototype.slice.call(files))
-                    .filter(util_1.removeDirectory)
+                    .concatMap(function (file) {
+                    return Observable_1.Observable.create(function (oo) {
+                        var reader = new FileReader();
+                        reader.onload = function () {
+                            oo.next(file);
+                            oo.complete();
+                        };
+                        reader.onerror = function () {
+                            oo.error(e);
+                        };
+                        reader.readAsText(file);
+                    });
+                })
                     .map(function (file) {
                     file.path = '';
                     return file;
@@ -445,7 +456,7 @@ exports.handleDrop = function (dropElement, options) {
                     .subscribe(function (fs) {
                     obs.next(fs);
                     onDrop(dropElement, fs);
-                });
+                }, console.error.bind(console));
             }
         };
     });
