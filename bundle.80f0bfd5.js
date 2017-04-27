@@ -6,11 +6,21 @@ webpackJsonp([1],{
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var userAgent = window.navigator.userAgent;
-var safari = /safari\//i.test(userAgent);
-exports.removeDirectory = function (file) {
-    console.log(file, file.type, file.size, safari);
-    return !(!file.type && (safari || (file.size % 4096) === 0 && file.size <= 102400));
+var Observable_1 = __webpack_require__("rCTf");
+exports.getFile = function (file) {
+    return Observable_1.Observable.create(function (obs) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            console.log(e);
+            obs.next(file);
+            obs.complete();
+        };
+        reader.onerror = function (e) {
+            console.log(e);
+            obs.complete();
+        };
+        reader.readAsText(file);
+    });
 };
 exports.createAction = function (action) { return function (payload) { return ({ action: "upload/" + action, payload: payload }); }; };
 
@@ -362,6 +372,7 @@ __webpack_require__("UNGF");
 __webpack_require__("UyzR");
 __webpack_require__("jvbR");
 __webpack_require__("7axH");
+var util_1 = __webpack_require__("2HJH");
 var scanFiles = function (entry) {
     if (entry.isFile) {
         return Observable_1.Observable.create(function (observer) {
@@ -433,19 +444,7 @@ exports.handleDrop = function (dropElement, options) {
             }
             else if (files && files.length) {
                 files$ = Observable_1.Observable.from(Array.prototype.slice.call(files))
-                    .concatMap(function (file) {
-                    return Observable_1.Observable.create(function (oo) {
-                        var reader = new FileReader();
-                        reader.onload = function () {
-                            oo.next(file);
-                            oo.complete();
-                        };
-                        reader.onerror = function () {
-                            oo.error(e);
-                        };
-                        reader.readAsText(file);
-                    });
-                })
+                    .concatMap(util_1.getFile)
                     .map(function (file) {
                     file.path = '';
                     return file;
@@ -472,9 +471,12 @@ exports.handleDrop = function (dropElement, options) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Observable_1 = __webpack_require__("rCTf");
+__webpack_require__("S35O");
 __webpack_require__("E7Yq");
 __webpack_require__("+pb+");
+__webpack_require__("jvbR");
 __webpack_require__("tuHt");
+__webpack_require__("7axH");
 var util_1 = __webpack_require__("2HJH");
 var globalInputButton;
 exports.handleClick = function (clickElement, config) {
@@ -501,7 +503,9 @@ exports.handleClick = function (clickElement, config) {
             globalInputButton.value = null;
         };
     })
-        .map(function (files) { return files.filter(util_1.removeDirectory); });
+        .concatMap(function (files) {
+        return Observable_1.Observable.from(files).concatMap(util_1.getFile).toArray();
+    });
     return Observable_1.Observable.fromEvent(clickElement, 'click')
         .switchMapTo(file$);
 };
