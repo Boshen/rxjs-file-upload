@@ -6,6 +6,11 @@ webpackJsonp([1],{
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var userAgent = window.navigator.userAgent;
+var safari = /safari\//i.test(userAgent);
+exports.removeDirectory = function (file) {
+    return !(!file.type && (safari || (file.size % 4096) === 0 && file.size <= 102400));
+};
 exports.createAction = function (action) { return function (payload) { return ({ action: "upload/" + action, payload: payload }); }; };
 
 
@@ -144,9 +149,6 @@ __webpack_require__("wUn1");
 __webpack_require__("6Yye");
 var src_1 = __webpack_require__("6sO2");
 var preventDefault = function (e) {
-    if (e.target.nodeName === 'INPUT' && e.target.type === 'file') {
-        return;
-    }
     e.preventDefault();
 };
 window.addEventListener('dragenter', preventDefault);
@@ -359,8 +361,7 @@ __webpack_require__("UNGF");
 __webpack_require__("UyzR");
 __webpack_require__("jvbR");
 __webpack_require__("7axH");
-var userAgent = window.navigator.userAgent;
-var safari = /safari\//i.test(userAgent);
+var util_1 = __webpack_require__("2HJH");
 var scanFiles = function (entry) {
     if (entry.isFile) {
         return Observable_1.Observable.create(function (observer) {
@@ -384,12 +385,6 @@ var scanFiles = function (entry) {
         }).switch();
     }
 };
-var maybeDirectory = function (file) {
-    return !safari
-        && file.type === ''
-        && (file.size % 4096) === 0
-        && (file.size <= 102400);
-};
 exports.handleDrop = function (dropElement, options) {
     if (options === void 0) { options = {}; }
     var onDrop = options.onDrop || (function () { });
@@ -412,33 +407,48 @@ exports.handleDrop = function (dropElement, options) {
             e.preventDefault();
         };
         dropElement.ondrop = function (e) {
+            onHover(dropElement, false);
             var items = e.dataTransfer.items;
             var files = e.dataTransfer.files;
+            console.log(e, files, items);
+            e.preventDefault();
+            console.log(e, files, items);
             var files$;
-            if (items) {
+            if (items && items.length) {
                 files$ = Observable_1.Observable.from(Array.prototype.slice.call(items))
-                    .filter(function (item) { return !!item; })
-                    .concatMap(function (item) { return scanFiles(item.webkitGetAsEntry()); })
+                    .filter(function (item) {
+                    return item && item.kind === 'file' && !!(item.webkitGetAsEntry || item.getAsEntry);
+                })
+                    .map(function (item) {
+                    return item.webkitGetAsEntry ? item.webkitGetAsEntry() : item.getAsEntry();
+                })
+                    .concatMap(scanFiles)
                     .map(function (_a) {
                     var file = _a.file, entry = _a.entry;
-                    file.path = options.directory ? entry.fullPath.slice(1) : '';
+                    var relativePath = entry.fullPath.slice(1);
+                    try {
+                        file.path = (options.directory && relativePath !== file.name) ? relativePath : '';
+                    }
+                    catch (_) { }
                     return file;
                 });
             }
-            else if (files) {
+            else if (files && files.length) {
                 files$ = Observable_1.Observable.from(Array.prototype.slice.call(files))
-                    .filter(function (file) { return !maybeDirectory(file); })
+                    .filter(util_1.removeDirectory)
                     .map(function (file) {
-                    file.path = '';
+                    try {
+                        file.path = '';
+                    }
+                    catch (_) { }
                     return file;
                 });
             }
             if (files$) {
                 files$.toArray()
                     .subscribe(function (fs) {
-                    e.preventDefault();
-                    onDrop(dropElement, fs);
                     obs.next(fs);
+                    onDrop(dropElement, fs);
                 });
             }
         };
@@ -455,9 +465,10 @@ exports.handleDrop = function (dropElement, options) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Observable_1 = __webpack_require__("rCTf");
-var FileAPI = __webpack_require__("6C8E");
 __webpack_require__("E7Yq");
+__webpack_require__("+pb+");
 __webpack_require__("tuHt");
+var util_1 = __webpack_require__("2HJH");
 var globalInputButton;
 exports.handleClick = function (clickElement, config) {
     if (config === void 0) { config = {}; }
@@ -470,8 +481,8 @@ exports.handleClick = function (clickElement, config) {
         globalInputButton.multiple = config.directory || config.multiple || false;
         globalInputButton.webkitdirectory = config.directory || false;
         globalInputButton.value = null;
-        globalInputButton.onchange = function (e) {
-            var files = FileAPI.getFiles(e);
+        globalInputButton.onchange = function () {
+            var files = Array.prototype.slice.call(globalInputButton.files);
             files.forEach(function (file) {
                 file.path = file.webkitRelativePath;
             });
@@ -482,7 +493,8 @@ exports.handleClick = function (clickElement, config) {
         return function () {
             globalInputButton.value = null;
         };
-    });
+    })
+        .map(function (files) { return files.filter(util_1.removeDirectory); });
     return Observable_1.Observable.fromEvent(clickElement, 'click')
         .switchMapTo(file$);
 };
