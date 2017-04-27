@@ -87,9 +87,6 @@ var src_1 = __webpack_require__("6sO2");
 var preventDefault = function (e) {
     e.preventDefault();
 };
-window.addEventListener('dragenter', preventDefault);
-window.addEventListener('drop', preventDefault);
-window.addEventListener('dragover', preventDefault);
 var hostInput = document.getElementById('host');
 hostInput.value = window.localStorage.getItem('hostInput') || 'http://striker.project.ci';
 hostInput.onkeydown = function (e) {
@@ -296,6 +293,7 @@ var Observable_1 = __webpack_require__("rCTf");
 __webpack_require__("UNGF");
 __webpack_require__("UyzR");
 __webpack_require__("jvbR");
+__webpack_require__("6Yye");
 var scanFiles = function (entry) {
     if (entry.isFile) {
         return Observable_1.Observable.create(function (observer) {
