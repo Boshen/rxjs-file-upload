@@ -35,18 +35,6 @@ __export(__webpack_require__("2HJH"));
 
 /***/ }),
 
-/***/ "7axH":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var Observable_1 = __webpack_require__("rCTf");
-var toArray_1 = __webpack_require__("9PGs");
-Observable_1.Observable.prototype.toArray = toArray_1.toArray;
-//# sourceMappingURL=toArray.js.map
-
-/***/ }),
-
 /***/ "9MNP":
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -69,58 +57,6 @@ exports.post = function (_a) {
         .map(function (r) { return r.response; });
 };
 
-
-/***/ }),
-
-/***/ "9PGs":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var Subscriber_1 = __webpack_require__("mmVS");
-/**
- * @return {Observable<any[]>|WebSocketSubject<T>|Observable<T>}
- * @method toArray
- * @owner Observable
- */
-function toArray() {
-    return this.lift(new ToArrayOperator());
-}
-exports.toArray = toArray;
-var ToArrayOperator = (function () {
-    function ToArrayOperator() {
-    }
-    ToArrayOperator.prototype.call = function (subscriber, source) {
-        return source.subscribe(new ToArraySubscriber(subscriber));
-    };
-    return ToArrayOperator;
-}());
-/**
- * We need this JSDoc comment for affecting ESDoc.
- * @ignore
- * @extends {Ignored}
- */
-var ToArraySubscriber = (function (_super) {
-    __extends(ToArraySubscriber, _super);
-    function ToArraySubscriber(destination) {
-        _super.call(this, destination);
-        this.array = [];
-    }
-    ToArraySubscriber.prototype._next = function (x) {
-        this.array.push(x);
-    };
-    ToArraySubscriber.prototype._complete = function () {
-        this.destination.next(this.array);
-        this.destination.complete();
-    };
-    return ToArraySubscriber;
-}(Subscriber_1.Subscriber));
-//# sourceMappingURL=toArray.js.map
 
 /***/ }),
 
@@ -360,8 +296,6 @@ var Observable_1 = __webpack_require__("rCTf");
 __webpack_require__("UNGF");
 __webpack_require__("UyzR");
 __webpack_require__("jvbR");
-__webpack_require__("7axH");
-var util_1 = __webpack_require__("2HJH");
 var scanFiles = function (entry) {
     if (entry.isFile) {
         return Observable_1.Observable.create(function (observer) {
@@ -392,11 +326,13 @@ exports.handleDrop = function (dropElement, options) {
     return Observable_1.Observable.create(function (obs) {
         var enterCount = 0;
         dropElement.ondragenter = function (e) {
+            console.log(e);
             enterCount += 1;
             e.preventDefault();
             onHover(dropElement, true);
         };
         dropElement.ondragleave = function (e) {
+            console.log(e);
             enterCount -= 1;
             if (enterCount === 0) {
                 e.preventDefault();
@@ -404,53 +340,17 @@ exports.handleDrop = function (dropElement, options) {
             }
         };
         dropElement.ondragover = function (e) {
+            console.log(e);
             e.preventDefault();
         };
         dropElement.ondrop = function (e) {
+            console.log(e);
             onHover(dropElement, false);
             var items = e.dataTransfer.items;
             var files = e.dataTransfer.files;
             console.log(e, files, items);
             e.preventDefault();
             console.log(e, files, items);
-            var files$;
-            if (items && items.length) {
-                files$ = Observable_1.Observable.from(Array.prototype.slice.call(items))
-                    .filter(function (item) {
-                    return item && item.kind === 'file' && !!(item.webkitGetAsEntry || item.getAsEntry);
-                })
-                    .map(function (item) {
-                    return item.webkitGetAsEntry ? item.webkitGetAsEntry() : item.getAsEntry();
-                })
-                    .concatMap(scanFiles)
-                    .map(function (_a) {
-                    var file = _a.file, entry = _a.entry;
-                    var relativePath = entry.fullPath.slice(1);
-                    try {
-                        file.path = (options.directory && relativePath !== file.name) ? relativePath : '';
-                    }
-                    catch (_) { }
-                    return file;
-                });
-            }
-            else if (files && files.length) {
-                files$ = Observable_1.Observable.from(Array.prototype.slice.call(files))
-                    .filter(util_1.removeDirectory)
-                    .map(function (file) {
-                    try {
-                        file.path = '';
-                    }
-                    catch (_) { }
-                    return file;
-                });
-            }
-            if (files$) {
-                files$.toArray()
-                    .subscribe(function (fs) {
-                    obs.next(fs);
-                    onDrop(dropElement, fs);
-                });
-            }
         };
     });
 };
