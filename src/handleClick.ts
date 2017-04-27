@@ -3,6 +3,8 @@ import { Observable } from 'rxjs/Observable'
 import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/switchMapTo'
 
+import { removeDirectory } from './util'
+
 export interface HandleClickConfig {
   multiple?: boolean
   accept?: string
@@ -36,6 +38,7 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
       globalInputButton.value = null
     }
   })
+  .filter(removeDirectory)
 
   return Observable.fromEvent(clickElement, 'click')
     .switchMapTo(file$)

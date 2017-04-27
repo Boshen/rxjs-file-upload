@@ -6,8 +6,7 @@ import 'rxjs/add/operator/switch'
 import 'rxjs/add/operator/concatMap'
 import 'rxjs/add/operator/toArray'
 
-const userAgent = window.navigator.userAgent
-const safari = /safari\//i.test(userAgent)
+import { removeDirectory } from './util'
 
 export interface HandleDropOptions {
   directory: boolean
@@ -35,11 +34,6 @@ const scanFiles = (entry) => {
       })
     }).switch()
   }
-}
-
-// http://stackoverflow.com/questions/8856628/detecting-folders-directories-in-javascript-filelist-objects
-const maybeDirectory = (file: File) => {
-  return !file.type && (safari || (file.size % 4096) === 0 && file.size <= 102400)
 }
 
 export const handleDrop = (
@@ -73,6 +67,7 @@ export const handleDrop = (
 
     dropElement.ondrop = (e) => {
       e.preventDefault()
+      onHover(dropElement, false)
 
       const items = e.dataTransfer.items
       const files = e.dataTransfer.files
@@ -80,20 +75,24 @@ export const handleDrop = (
       if (items && items.length) {
         files$ = Observable.from(Array.prototype.slice.call(items))
           .filter((item: any) => {
-            return item && item.kind === 'file' && (item.webkitGetAsEntry || item.getAsEntry)
+            return item && item.kind === 'file' && !!(item.webkitGetAsEntry || item.getAsEntry)
           })
-          .concatMap((item: any) => {
-            return scanFiles(item.webkitGetAsEntry ? item.webkitGetAsEntry() : item.getAsEntry())
+          .map((item: any) => {
+            return item.webkitGetAsEntry ? item.webkitGetAsEntry() : item.getAsEntry()
           })
+          .concatMap(scanFiles)
           .map(({ file, entry }) => {
             const relativePath = entry.fullPath.slice(1) // e.g. fullPath = `/README.md` or `/dir/README.md`
             // dropping a single file should give no path info
-            file.path = (options.directory && relativePath !== file.name) ? relativePath : ''
+            // file object is read only, property assignment may fail
+            try {
+              file.path = (options.directory && relativePath !== file.name) ? relativePath : ''
+            } catch (_) {}
             return file
           })
       } else if (files && files.length) {
         files$ = Observable.from(Array.prototype.slice.call(files))
-          .filter((file: any) => !maybeDirectory(file))
+          .filter(removeDirectory)
           .map((file: any) => {
             file.path = ''
             return file
@@ -102,9 +101,8 @@ export const handleDrop = (
       if (files$) {
         files$.toArray()
           .subscribe((fs: File[]) => {
-            onHover(dropElement, false)
-            onDrop(dropElement, fs)
             obs.next(fs)
+            onDrop(dropElement, fs)
           })
       }
     }
