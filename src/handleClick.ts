@@ -1,10 +1,13 @@
 import { Observable } from 'rxjs/Observable'
 
+import 'rxjs/add/observable/from'
 import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/map'
+import 'rxjs/add/operator/concatMap'
 import 'rxjs/add/operator/switchMapTo'
+import 'rxjs/add/operator/toArray'
 
-import { removeDirectory } from './util'
+import { getFile } from './util'
 
 export interface HandleClickConfig {
   multiple?: boolean
@@ -39,7 +42,9 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
       globalInputButton.value = null
     }
   })
-  .map((files) => files.filter(removeDirectory))
+  .concatMap((files) => {
+    return Observable.from(files).concatMap(getFile).toArray()
+  })
 
   return Observable.fromEvent(clickElement, 'click')
     .switchMapTo(file$)

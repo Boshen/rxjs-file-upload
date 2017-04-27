@@ -6,7 +6,7 @@ import 'rxjs/add/operator/switch'
 import 'rxjs/add/operator/concatMap'
 import 'rxjs/add/operator/toArray'
 
-import { removeDirectory } from './util'
+import { getFile } from './util'
 
 export interface HandleDropOptions {
   directory: boolean
@@ -92,7 +92,7 @@ export const handleDrop = (
           })
       } else if (files && files.length) {
         files$ = Observable.from(Array.prototype.slice.call(files))
-          .filter(removeDirectory)
+          .concatMap(getFile)
           .map((file: any) => {
             file.path = ''
             return file
