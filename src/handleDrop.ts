@@ -87,7 +87,7 @@ export const handleDrop = (
             // file object is read only, property assignment may fail
             try {
               file.path = (options.directory && relativePath !== file.name) ? relativePath : ''
-            } catch (_) {}
+            } catch (_) {} // tslint:disable-line:no-empty
             return file
           })
       } else if (files && files.length) {
