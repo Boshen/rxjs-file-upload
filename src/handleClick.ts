@@ -7,8 +7,6 @@ import 'rxjs/add/operator/concatMap'
 import 'rxjs/add/operator/switchMapTo'
 import 'rxjs/add/operator/toArray'
 
-import { getFile } from './util'
-
 export interface HandleClickConfig {
   multiple?: boolean
   accept?: string
@@ -41,9 +39,6 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
     return () => {
       globalInputButton.value = null
     }
-  })
-  .concatMap((files) => {
-    return Observable.from(files).concatMap(getFile).toArray()
   })
 
   return Observable.fromEvent(clickElement, 'click')
