@@ -7,19 +7,28 @@ webpackJsonp([1],{
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Observable_1 = __webpack_require__("rCTf");
-exports.getFile = function (file) {
+__webpack_require__("AGQa");
+__webpack_require__("cDAr");
+__webpack_require__("hzF8");
+__webpack_require__("6Yye");
+exports.excludeFolder = function (file) {
+    if (file.size > 1048576) {
+        return Observable_1.Observable.of(file);
+    }
     return Observable_1.Observable.create(function (obs) {
         var reader = new FileReader();
-        reader.onload = function (e) {
-            console.log(e);
+        reader.onload = function () {
             obs.next(file);
-            obs.complete();
         };
         reader.onerror = function (e) {
-            console.log(e);
-            obs.complete();
+            obs.error(e);
         };
-        reader.readAsText(file);
+        reader.readAsArrayBuffer(file);
+    })
+        .take(1)
+        .timeout(1000)
+        .catch(function () {
+        return Observable_1.Observable.empty();
     });
 };
 exports.createAction = function (action) { return function (payload) { return ({ action: "upload/" + action, payload: payload }); }; };
@@ -43,18 +52,6 @@ __export(__webpack_require__("lRq6"));
 __export(__webpack_require__("UNZf"));
 __export(__webpack_require__("2HJH"));
 
-
-/***/ }),
-
-/***/ "7axH":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var Observable_1 = __webpack_require__("rCTf");
-var toArray_1 = __webpack_require__("9PGs");
-Observable_1.Observable.prototype.toArray = toArray_1.toArray;
-//# sourceMappingURL=toArray.js.map
 
 /***/ }),
 
@@ -83,7 +80,61 @@ exports.post = function (_a) {
 
 /***/ }),
 
-/***/ "9PGs":
+/***/ "CGGv":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var AsyncAction_1 = __webpack_require__("cwzr");
+var AsyncScheduler_1 = __webpack_require__("9Avi");
+/**
+ *
+ * Async Scheduler
+ *
+ * <span class="informal">Schedule task as if you used setTimeout(task, duration)</span>
+ *
+ * `async` scheduler schedules tasks asynchronously, by putting them on the JavaScript
+ * event loop queue. It is best used to delay tasks in time or to schedule tasks repeating
+ * in intervals.
+ *
+ * If you just want to "defer" task, that is to perform it right after currently
+ * executing synchronous code ends (commonly achieved by `setTimeout(deferredTask, 0)`),
+ * better choice will be the {@link asap} scheduler.
+ *
+ * @example <caption>Use async scheduler to delay task</caption>
+ * const task = () => console.log('it works!');
+ *
+ * Rx.Scheduler.async.schedule(task, 2000);
+ *
+ * // After 2 seconds logs:
+ * // "it works!"
+ *
+ *
+ * @example <caption>Use async scheduler to repeat task in intervals</caption>
+ * function task(state) {
+ *   console.log(state);
+ *   this.schedule(state + 1, 1000); // `this` references currently executing Action,
+ *                                   // which we reschedule with new state and delay
+ * }
+ *
+ * Rx.Scheduler.async.schedule(task, 3000, 0);
+ *
+ * // Logs:
+ * // 0 after 3s
+ * // 1 after 4s
+ * // 2 after 5s
+ * // 3 after 6s
+ *
+ * @static true
+ * @name async
+ * @owner Scheduler
+ */
+exports.async = new AsyncScheduler_1.AsyncScheduler(AsyncAction_1.AsyncAction);
+//# sourceMappingURL=async.js.map
+
+/***/ }),
+
+/***/ "E/WS":
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -93,45 +144,83 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+var async_1 = __webpack_require__("CGGv");
+var isDate_1 = __webpack_require__("fuZx");
 var Subscriber_1 = __webpack_require__("mmVS");
+var TimeoutError_1 = __webpack_require__("cmqr");
 /**
- * @return {Observable<any[]>|WebSocketSubject<T>|Observable<T>}
- * @method toArray
+ * @param {number} due
+ * @param {Scheduler} [scheduler]
+ * @return {Observable<R>|WebSocketSubject<T>|Observable<T>}
+ * @method timeout
  * @owner Observable
  */
-function toArray() {
-    return this.lift(new ToArrayOperator());
+function timeout(due, scheduler) {
+    if (scheduler === void 0) { scheduler = async_1.async; }
+    var absoluteTimeout = isDate_1.isDate(due);
+    var waitFor = absoluteTimeout ? (+due - scheduler.now()) : Math.abs(due);
+    return this.lift(new TimeoutOperator(waitFor, absoluteTimeout, scheduler, new TimeoutError_1.TimeoutError()));
 }
-exports.toArray = toArray;
-var ToArrayOperator = (function () {
-    function ToArrayOperator() {
+exports.timeout = timeout;
+var TimeoutOperator = (function () {
+    function TimeoutOperator(waitFor, absoluteTimeout, scheduler, errorInstance) {
+        this.waitFor = waitFor;
+        this.absoluteTimeout = absoluteTimeout;
+        this.scheduler = scheduler;
+        this.errorInstance = errorInstance;
     }
-    ToArrayOperator.prototype.call = function (subscriber, source) {
-        return source.subscribe(new ToArraySubscriber(subscriber));
+    TimeoutOperator.prototype.call = function (subscriber, source) {
+        return source.subscribe(new TimeoutSubscriber(subscriber, this.absoluteTimeout, this.waitFor, this.scheduler, this.errorInstance));
     };
-    return ToArrayOperator;
+    return TimeoutOperator;
 }());
 /**
  * We need this JSDoc comment for affecting ESDoc.
  * @ignore
  * @extends {Ignored}
  */
-var ToArraySubscriber = (function (_super) {
-    __extends(ToArraySubscriber, _super);
-    function ToArraySubscriber(destination) {
+var TimeoutSubscriber = (function (_super) {
+    __extends(TimeoutSubscriber, _super);
+    function TimeoutSubscriber(destination, absoluteTimeout, waitFor, scheduler, errorInstance) {
         _super.call(this, destination);
-        this.array = [];
+        this.absoluteTimeout = absoluteTimeout;
+        this.waitFor = waitFor;
+        this.scheduler = scheduler;
+        this.errorInstance = errorInstance;
+        this.action = null;
+        this.scheduleTimeout();
     }
-    ToArraySubscriber.prototype._next = function (x) {
-        this.array.push(x);
+    TimeoutSubscriber.dispatchTimeout = function (subscriber) {
+        subscriber.error(subscriber.errorInstance);
     };
-    ToArraySubscriber.prototype._complete = function () {
-        this.destination.next(this.array);
-        this.destination.complete();
+    TimeoutSubscriber.prototype.scheduleTimeout = function () {
+        var action = this.action;
+        if (action) {
+            // Recycle the action if we've already scheduled one. All the production
+            // Scheduler Actions mutate their state/delay time and return themeselves.
+            // VirtualActions are immutable, so they create and return a clone. In this
+            // case, we need to set the action reference to the most recent VirtualAction,
+            // to ensure that's the one we clone from next time.
+            this.action = action.schedule(this, this.waitFor);
+        }
+        else {
+            this.add(this.action = this.scheduler.schedule(TimeoutSubscriber.dispatchTimeout, this.waitFor, this));
+        }
     };
-    return ToArraySubscriber;
+    TimeoutSubscriber.prototype._next = function (value) {
+        if (!this.absoluteTimeout) {
+            this.scheduleTimeout();
+        }
+        _super.prototype._next.call(this, value);
+    };
+    TimeoutSubscriber.prototype._unsubscribe = function () {
+        this.action = null;
+        this.scheduler = null;
+        this.errorInstance = null;
+    };
+    return TimeoutSubscriber;
 }(Subscriber_1.Subscriber));
-//# sourceMappingURL=toArray.js.map
+//# sourceMappingURL=timeout.js.map
 
 /***/ }),
 
@@ -444,7 +533,7 @@ exports.handleDrop = function (dropElement, options) {
             }
             else if (files && files.length) {
                 files$ = Observable_1.Observable.from(Array.prototype.slice.call(files))
-                    .concatMap(util_1.getFile)
+                    .concatMap(util_1.excludeFolder)
                     .map(function (file) {
                     file.path = '';
                     return file;
@@ -455,7 +544,7 @@ exports.handleDrop = function (dropElement, options) {
                     .subscribe(function (fs) {
                     obs.next(fs);
                     onDrop(dropElement, fs);
-                }, console.error.bind(console));
+                });
             }
         };
     });
@@ -477,7 +566,6 @@ __webpack_require__("+pb+");
 __webpack_require__("jvbR");
 __webpack_require__("tuHt");
 __webpack_require__("7axH");
-var util_1 = __webpack_require__("2HJH");
 var globalInputButton;
 exports.handleClick = function (clickElement, config) {
     if (config === void 0) { config = {}; }
@@ -502,14 +590,23 @@ exports.handleClick = function (clickElement, config) {
         return function () {
             globalInputButton.value = null;
         };
-    })
-        .concatMap(function (files) {
-        return Observable_1.Observable.from(files).concatMap(util_1.getFile).toArray();
     });
     return Observable_1.Observable.fromEvent(clickElement, 'click')
         .switchMapTo(file$);
 };
 
+
+/***/ }),
+
+/***/ "cDAr":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var Observable_1 = __webpack_require__("rCTf");
+var timeout_1 = __webpack_require__("E/WS");
+Observable_1.Observable.prototype.timeout = timeout_1.timeout;
+//# sourceMappingURL=timeout.js.map
 
 /***/ }),
 
@@ -608,6 +705,51 @@ exports.upload = function (file, config, controlSubjects) {
     };
 };
 
+
+/***/ }),
+
+/***/ "cmqr":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+/**
+ * An error thrown when duetime elapses.
+ *
+ * @see {@link timeout}
+ *
+ * @class TimeoutError
+ */
+var TimeoutError = (function (_super) {
+    __extends(TimeoutError, _super);
+    function TimeoutError() {
+        var err = _super.call(this, 'Timeout has occurred');
+        this.name = err.name = 'TimeoutError';
+        this.stack = err.stack;
+        this.message = err.message;
+    }
+    return TimeoutError;
+}(Error));
+exports.TimeoutError = TimeoutError;
+//# sourceMappingURL=TimeoutError.js.map
+
+/***/ }),
+
+/***/ "fuZx":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+function isDate(value) {
+    return value instanceof Date && !isNaN(+value);
+}
+exports.isDate = isDate;
+//# sourceMappingURL=isDate.js.map
 
 /***/ }),
 
