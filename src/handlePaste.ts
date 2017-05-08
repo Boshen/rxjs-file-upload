@@ -6,6 +6,14 @@ import 'rxjs/add/operator/map'
 let uid = 0
 const image = 'image/png'
 
+const isBlob = (blob: Blob | null) => {
+  if (!blob) {
+    return false
+  }
+  const s = {}.toString.call(blob)
+  return s === '[object Blob]' || s === '[object File]'
+}
+
 export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
   return Observable.fromEvent(pasteElement, 'paste')
     .map((e: ClipboardEvent) => {
@@ -14,11 +22,11 @@ export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
       if (items) {
         for (let i = 0; i < items.length; i++) {
           const blob = items[i].getAsFile()
-          if (blob && ({}.toString.call(blob) === '[object Blob]')) {
+          if (isBlob(blob)) {
             let file
             const name = `Screenshot-${uid++}.png`
             try {
-              file = new File([blob], name, { type: image })
+              file = new File([blob!], name, { type: image })
             } catch (_) {
               file = <any>blob // tslint:disable-line
               file.lastModifiedDate = new Date()
