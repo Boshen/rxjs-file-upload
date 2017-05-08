@@ -66,8 +66,13 @@ export const handleDrop = (
     }
 
     dropElement.ondrop = (e) => {
-      e.preventDefault()
       onHover(dropElement, false)
+
+      if (!e.dataTransfer) {
+        return
+      }
+
+      e.preventDefault()
 
       const items = e.dataTransfer.items
       const files = e.dataTransfer.files
