@@ -8,7 +8,7 @@
     "moduleResolution": "node",
     "newLine": "LF",
     "noEmitHelpers": true,
-    "noImplicitReturns": true,
+    "noImplicitAny": true,
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -17,6 +17,7 @@
     "rootDir": "src",
     "inlineSourceMap": true,
     "strictNullChecks": true,
+    "suppressImplicitAnyIndexErrors": true,
     "target": "ES5"
   },
   "include": [

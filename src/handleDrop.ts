@@ -1,5 +1,6 @@
 // tslint:disable:no-any
 import { Observable } from 'rxjs/Observable'
+import { Observer } from 'rxjs/Observer'
 
 import { excludeFolder } from './util'
 
@@ -9,17 +10,17 @@ export interface HandleDropOptions {
   onDrop: (e: HTMLElement, files: File[]) => void
 }
 
-const scanFiles = (entry) => {
+const scanFiles = (entry: any) => {
   if (entry.isFile) {
-    return Observable.create((observer) => {
-      entry.file((file) => {
+    return Observable.create((observer: Observer<any>) => {
+      (<WebKitFileEntry>entry).file((file: Event) => {
         observer.next({ file, entry })
         observer.complete()
       })
     })
   } else if (entry.isDirectory) {
-    return Observable.create((observer) => {
-      entry.createReader().readEntries((entries) => {
+    return Observable.create((observer: Observer<Observable<any>>) => {
+      (<WebKitDirectoryEntry>entry).createReader().readEntries((entries: any) => {
         if (entries.length === 0) {
           observer.complete()
         } else {
@@ -39,7 +40,7 @@ export const handleDrop = (
   const onDrop = options.onDrop || (() => {}) // tslint:disable-line
   const onHover = options.onHover || (() => {}) // tslint:disable-line
 
-  return Observable.create((obs) => {
+  return Observable.create((obs: Observer<File[]>) => {
     let enterCount = 0
 
     dropElement.ondragenter = (e) => {
@@ -74,11 +75,11 @@ export const handleDrop = (
       let files$
       if (items && items.length) {
         files$ = Observable.from(Array.prototype.slice.call(items))
-          .filter((item: any) => {
-            return item && item.kind === 'file' && !!(item.webkitGetAsEntry || item.getAsEntry)
+          .filter((item: DataTransferItem) => {
+            return item && item.kind === 'file' && !!item.webkitGetAsEntry
           })
-          .map((item: any) => {
-            return item.webkitGetAsEntry ? item.webkitGetAsEntry() : item.getAsEntry()
+          .map((item: DataTransferItem) => {
+            return item.webkitGetAsEntry()
           })
           .concatMap(scanFiles)
           .map(({ file, entry }) => {
@@ -86,15 +87,15 @@ export const handleDrop = (
             // dropping a single file should give no path info
             // file object is read only, property assignment may fail
             try {
-              file.path = (options.directory && relativePath !== file.name) ? relativePath : ''
+              (<any>file).path = (options.directory && relativePath !== file.name) ? relativePath : ''
             } catch (_) {} // tslint:disable-line:no-empty
             return file
           })
       } else if (files && files.length) {
         files$ = Observable.from(Array.prototype.slice.call(files))
           .concatMap(excludeFolder)
-          .map((file: any) => {
-            file.path = ''
+          .map((file: File) => {
+            (<any>file).path = ''
             return file
           })
       }

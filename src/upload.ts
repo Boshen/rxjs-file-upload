@@ -25,7 +25,7 @@ export const createUploadSubjects = () => {
 const createFormData = (file: File) => {
   const formData = new FormData()
   const keys = ['name', 'type', 'size', 'lastModifiedDate']
-  keys.forEach((key) => formData.append(key, file[key]))
+  keys.forEach((key: string) => formData.append(key, file[key]))
   formData.append('file', file, file.name)
   return formData
 }

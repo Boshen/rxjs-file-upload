@@ -1,4 +1,6 @@
+// tslint:disable:no-any
 import { Observable } from 'rxjs/Observable'
+import { Observer } from 'rxjs/Observer'
 
 export interface HandleClickConfig {
   multiple?: boolean
@@ -6,7 +8,7 @@ export interface HandleClickConfig {
   directory?: boolean
 }
 
-let globalInputButton
+let globalInputButton: HTMLInputElement | undefined
 
 export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig = {}): Observable<File[]> => {
 
@@ -15,22 +17,22 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
     globalInputButton.type = 'file'
   }
 
-  const file$ = Observable.create((obs) => {
-    globalInputButton.accept = config.accept || ''
-    globalInputButton.multiple = config.directory || config.multiple || false
-    globalInputButton.webkitdirectory = config.directory || false
-    globalInputButton.value = null
-    globalInputButton.onchange = () => {
-      const files = Array.prototype.slice.call(globalInputButton.files)
-      files.forEach((file) => {
-        file.path = file.webkitRelativePath
+  const file$ = Observable.create((obs: Observer<File>) => {
+    globalInputButton!.accept = config.accept || ''
+    globalInputButton!.multiple = config.directory || config.multiple || false
+    globalInputButton!.webkitdirectory = config.directory || false
+    globalInputButton!.value = ''
+    globalInputButton!.onchange = () => {
+      const files = Array.prototype.slice.call(globalInputButton!.files)
+      files.forEach((file: File) => {
+        (<any>file).path = file.webkitRelativePath
       })
       obs.next(files)
       obs.complete()
     }
-    globalInputButton.click()
+    globalInputButton!.click()
     return () => {
-      globalInputButton.value = null
+      globalInputButton!.value = ''
     }
   })
 

@@ -49,11 +49,11 @@ export interface ChunkProgress {
 }
 
 export interface ChunkScan {
-  completes: {[index: number]: boolean}
-  errors: {[index: number]: boolean}
+  completes: {[index: string]: boolean}
+  errors: {[index: string]: boolean}
 }
 
-export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[] => {
+export const sliceFile = (file: File, chunks: number, chunkSize: number): Blob[] => {
   const result: Blob[] = []
   for (let i = 0; i < chunks; i ++) {
     const startSize = i * chunkSize
@@ -64,14 +64,14 @@ export const sliceFile = (file: Blob, chunks: number, chunkSize: number): Blob[]
   return result
 }
 
-export const startChunkUpload = (file: Blob, config: UploadChunksConfig) => {
+export const startChunkUpload = (file: File, config: UploadChunksConfig) => {
   let cache: null | FileMeta = null
   return Observable.defer(() => cache ? Observable.of(cache) : post({
     url: config.getChunkStartUrl(),
     body: {
-      fileName: file['name'], // tslint:disable-line
-      fileSize: file['size'], // tslint:disable-line
-      lastUpdated: file['lastModifiedDate'] // tslint:disable-line
+      fileName: file.name,
+      fileSize: file.size,
+      lastUpdated: file.lastModifiedDate
     },
     headers: {
       ...config.headers,
@@ -148,7 +148,7 @@ export const createChunkUploadSubjects = () => {
   }
 }
 
-export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubjects = createChunkUploadSubjects()) => {
+export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubjects = createChunkUploadSubjects()) => {
 
   const { startSubject, retrySubject, abortSubject, progressSubject, controlSubject, errorSubject } = controlSubjects
 
@@ -187,7 +187,7 @@ export const chunkUpload = (file: Blob, config: UploadChunksConfig, controlSubje
     }, {})
     .combineLatest(start$)
     .map(([acc, fileMeta]) => {
-      return Object.keys(acc).reduce((t, i) => t + acc[i], 0) / fileMeta.fileSize
+      return Object.keys(acc).reduce((t, i: string) => t + acc[i], 0) / fileMeta.fileSize
     })
     .distinctUntilChanged((x, y) => x > y)
     .map(createAction('progress'))
