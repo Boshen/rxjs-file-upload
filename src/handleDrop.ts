@@ -1,11 +1,6 @@
 // tslint:disable:no-any
 import { Observable } from 'rxjs/Observable'
 
-import 'rxjs/add/operator/reduce'
-import 'rxjs/add/operator/switch'
-import 'rxjs/add/operator/concatMap'
-import 'rxjs/add/operator/toArray'
-
 import { excludeFolder } from './util'
 
 export interface HandleDropOptions {

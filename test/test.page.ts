@@ -7,15 +7,6 @@ const Test = (<any>Mocha).Test // tslint:disable-line
 mocha.setup('bdd')
 
 import { Observable } from 'rxjs/Observable'
-import 'rxjs/add/observable/fromEvent'
-import 'rxjs/add/observable/merge'
-import 'rxjs/add/observable/empty'
-import 'rxjs/add/operator/do'
-import 'rxjs/add/operator/mergeAll'
-import 'rxjs/add/operator/mergeMap'
-import 'rxjs/add/operator/take'
-import 'rxjs/add/operator/filter'
-import 'rxjs/add/operator/catch'
 
 import { upload, chunkUpload, handleClick, handlePaste, handleDrop } from '../src'
 

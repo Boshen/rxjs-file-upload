@@ -3,16 +3,6 @@ import { Subject } from 'rxjs/Subject'
 import { ReplaySubject } from 'rxjs/ReplaySubject'
 import { Subscriber } from 'rxjs/Subscriber'
 
-import 'rxjs/add/observable/never'
-import 'rxjs/add/observable/concat'
-import 'rxjs/add/observable/of'
-
-import 'rxjs/add/operator/do'
-import 'rxjs/add/operator/merge'
-import 'rxjs/add/operator/multicast'
-import 'rxjs/add/operator/retryWhen'
-import 'rxjs/add/operator/takeUntil'
-
 import { post } from './post'
 import { createAction } from './util'
 

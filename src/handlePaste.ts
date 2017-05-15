@@ -1,8 +1,5 @@
 import { Observable } from 'rxjs/Observable'
 
-import 'rxjs/add/observable/fromEvent'
-import 'rxjs/add/operator/map'
-
 let uid = 0
 const image = 'image/png'
 

@@ -1,12 +1,5 @@
 import { Observable } from 'rxjs/Observable'
 
-import 'rxjs/add/observable/from'
-import 'rxjs/add/observable/fromEvent'
-import 'rxjs/add/operator/map'
-import 'rxjs/add/operator/concatMap'
-import 'rxjs/add/operator/switchMapTo'
-import 'rxjs/add/operator/toArray'
-
 export interface HandleClickConfig {
   multiple?: boolean
   accept?: string

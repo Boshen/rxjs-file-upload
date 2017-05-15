@@ -1,11 +1,5 @@
 import { Observable } from 'rxjs/Observable'
 
-import 'rxjs/add/observable/empty'
-
-import 'rxjs/add/operator/timeout'
-import 'rxjs/add/operator/take'
-import 'rxjs/add/operator/catch'
-
 // http://stackoverflow.com/questions/8856628/detecting-folders-directories-in-javascript-filelist-objects
 export const excludeFolder = (file: File) => {
   if (file.size > 1048576) {
