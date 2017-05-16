@@ -1,4 +1,3 @@
-// tslint:disable:no-any
 import { Observable } from 'rxjs/Observable'
 import { Observer } from 'rxjs/Observer'
 
@@ -37,8 +36,8 @@ export const handleDrop = (
   options: Partial<HandleDropOptions> = {}
 ): Observable<File[]> => {
 
-  const onDrop = options.onDrop || (() => {}) // tslint:disable-line
-  const onHover = options.onHover || (() => {}) // tslint:disable-line
+  const onDrop = options.onDrop || (() => {})
+  const onHover = options.onHover || (() => {})
 
   return Observable.create((obs: Observer<File[]>) => {
     let enterCount = 0
@@ -88,7 +87,7 @@ export const handleDrop = (
             // file object is read only, property assignment may fail
             try {
               (<any>file).path = (options.directory && relativePath !== file.name) ? relativePath : ''
-            } catch (_) {} // tslint:disable-line:no-empty
+            } catch (_) {}
             return file
           })
       } else if (files && files.length) {

@@ -55,7 +55,7 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     },
     progressSubscriber: Subscriber.create((pe: ProgressEvent) => {
       progressSubject.next(pe.loaded / pe.total)
-    }, () => {}) // tslint:disable-line
+    }, () => {})
   })
   .map(createAction('finish'))
   .retryWhen((e$) => {
@@ -73,7 +73,7 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     post$
   )
     .takeUntil(abortSubject)
-    .do(() => {}, cleanUp, cleanUp) // tslint:disable-line
+    .do(() => {}, cleanUp, cleanUp)
     .merge(progressSubject.map(createAction('progress')))
     .merge(errorSubject.map((e) => createAction('error')(e)))
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))

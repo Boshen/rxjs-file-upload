@@ -1,4 +1,3 @@
-// tslint:disable:no-any
 import { Observable } from 'rxjs/Observable'
 import { Observer } from 'rxjs/Observer'
 

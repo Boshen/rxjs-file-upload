@@ -2,15 +2,15 @@ require('mocha/mocha.css')
 require('mocha/mocha.js')
 const chai = require('chai')
 const expect = chai.expect
-const Suite = (<any>Mocha).Suite // tslint:disable-line
-const Test = (<any>Mocha).Test // tslint:disable-line
+const Suite = (<any>Mocha).Suite
+const Test = (<any>Mocha).Test
 mocha.setup('bdd')
 
 import { Observable } from 'rxjs/Observable'
 
 import { upload, chunkUpload, handleClick, handlePaste, handleDrop } from '../src'
 
-const preventDefault = (e) => {
+const preventDefault = (e: Event) => {
   e.preventDefault()
 }
 
@@ -42,20 +42,20 @@ const getUploadConfig = () => {
     getChunkStartUrl: () => {
       return `${host}/upload/chunk`
     },
-    getChunkUrl: (fileMeta, i) => {
+    getChunkUrl: (fileMeta: any, i: number) => {
       return `${host}/upload/chunk/${fileMeta.fileKey}?chunk=${i + 1}&chunks=${fileMeta.chunks}`
     },
-    getChunkFinishUrl: (fileMeta) => {
+    getChunkFinishUrl: (fileMeta: any) => {
       return `${host}/upload/chunk/${fileMeta.fileKey}`
     }
   }
 }
 
-const handleUpload = (files$) => {
-  files$.mergeAll().mergeMap((file) => {
+const handleUpload = (files$: Observable<File[]>) => {
+  files$.map((files) => Observable.from(files)).mergeAll().map((file: File) => {
     console.info('file:', file)
 
-    const suite = Suite.create((<any>mocha).suite, file.name) // tslint:disable-line
+    const suite = Suite.create((<any>mocha).suite, file.name)
     suite.addTest(new Test('should be blob', () => {
       expect(file).to.be.instanceof(Blob)
     }))
@@ -102,7 +102,7 @@ const handleUpload = (files$) => {
     li.appendChild($progress)
 
     return upload$
-      .do(({ action, payload }) => {
+      .do(({ action, payload }: {action: string, payload: any}) => {
         switch (action) {
           case 'upload/pausable':
             $pause.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
@@ -178,7 +178,7 @@ const handleUpload = (files$) => {
             break
         }
       })
-      .catch((e) => {
+      .catch((e: any) => {
         suite.addTest(new Test('should catch error with status ' + e.status, () => {
           expect(e.status).to.be.a('number')
           expect(e.status).to.be.at.least(400)
@@ -186,7 +186,8 @@ const handleUpload = (files$) => {
         return Observable.empty()
       })
   })
-  .catch((_, caught) => {
+  .mergeAll()
+  .catch((_: Error, caught: Observable<Error>) => {
     return caught
   })
   .subscribe(console.log.bind(console, 'final output: '))

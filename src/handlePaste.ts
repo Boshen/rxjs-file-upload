@@ -25,7 +25,7 @@ export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
             try {
               file = new File([blob!], name, { type: image })
             } catch (_) {
-              file = <any>blob // tslint:disable-line
+              file = <any>blob
               file.lastModifiedDate = new Date()
               file.name = name
               file.type = image

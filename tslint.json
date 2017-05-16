@@ -1,6 +1,6 @@
 {
   "rules": {
-    "no-any": true,
+    "no-any": false,
     "no-var-requires": false,
     "only-arrow-functions": false,
     "typedef": [true],
@@ -15,7 +15,7 @@
     "no-construct": true,
     "no-debugger": true,
     "no-duplicate-variable": true,
-    "no-empty": true,
+    "no-empty": false,
     "no-eval": true,
     "no-invalid-this": true,
     "no-null-keyword": false,

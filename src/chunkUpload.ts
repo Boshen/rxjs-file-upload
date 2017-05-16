@@ -112,7 +112,7 @@ export const uploadAllChunks = (
         },
         progressSubscriber: Subscriber.create((pe: ProgressEvent) => {
           progressSubject.next({ index, loaded: pe.loaded })
-        }, () => {}) // tslint:disable-line
+        }, () => {})
       })
         .do(() => completed = true)
         .map(() => ({ index, completed: true }))
@@ -231,7 +231,7 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
         })
     })
     .takeUntil(abortSubject)
-    .do(() => {}, cleanUp, cleanUp) // tslint:disable-line
+    .do(() => {}, cleanUp, cleanUp)
     .merge(errorSubject.map((e) => createAction('error')(e)))
     .merge(retrySubject.map((b) => createAction('retryable')(!b)))
     .merge(abortSubject.concatMap(() => Observable.of(
