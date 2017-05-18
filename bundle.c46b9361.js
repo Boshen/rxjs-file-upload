@@ -397,6 +397,7 @@ exports.handleDrop = function (dropElement, options) {
                     .concatMap(scanFiles)
                     .map(function (_a) {
                     var file = _a.file, entry = _a.entry;
+                    console.info(file, entry);
                     var relativePath = entry.fullPath.slice(1);
                     try {
                         file.path = (options.directory && relativePath !== file.name) ? relativePath : '';
