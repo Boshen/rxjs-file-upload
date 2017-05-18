@@ -9,11 +9,14 @@ export interface HandleDropOptions {
   onDrop: (e: HTMLElement, files: File[]) => void
 }
 
-const scanFiles = (entry: any) => {
+const scanFiles = (entry: any, isInsideDir = false) => {
   if (entry.isFile) {
     return Observable.create((observer: Observer<any>) => {
       (<WebKitFileEntry>entry).file((file: Event) => {
-        observer.next({ file, entry })
+        try {
+          (<any>file).path = isInsideDir ? entry.fullPath.slice(1) : ''
+        } catch (_) {}
+        observer.next(file)
         observer.complete()
       })
     })
@@ -23,7 +26,7 @@ const scanFiles = (entry: any) => {
         if (entries.length === 0) {
           observer.complete()
         } else {
-          observer.next(Observable.from(entries).concatMap(scanFiles))
+          observer.next(Observable.from(entries).concatMap((file) => scanFiles(file, true)))
           observer.complete()
         }
       })
@@ -80,16 +83,7 @@ export const handleDrop = (
           .map((item: DataTransferItem) => {
             return item.webkitGetAsEntry()
           })
-          .concatMap(scanFiles)
-          .map(({ file, entry }) => {
-            const relativePath = entry.fullPath.slice(1) // e.g. fullPath = `/README.md` or `/dir/README.md`
-            // dropping a single file should give no path info
-            // file object is read only, property assignment may fail
-            try {
-              (<any>file).path = (options.directory && relativePath !== file.name) ? relativePath : ''
-            } catch (_) {}
-            return file
-          })
+          .concatMap((entry) => scanFiles(entry))
       } else if (files && files.length) {
         files$ = Observable.from(Array.prototype.slice.call(files))
           .concatMap(excludeFolder)
