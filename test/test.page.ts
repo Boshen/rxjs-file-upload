@@ -4,7 +4,7 @@ const chai = require('chai')
 const expect = chai.expect
 const Suite = (<any>Mocha).Suite
 const Test = (<any>Mocha).Test
-mocha.setup('bdd')
+mocha.setup({ ui: 'bdd' })
 
 import { Observable } from 'rxjs/Observable'
 
