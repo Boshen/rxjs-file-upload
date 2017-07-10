@@ -37,10 +37,8 @@ exports.createAction = function (action) { return function (payload) { return ({
 
 "use strict";
 
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
+var tslib_1 = __webpack_require__("TToO");
 __webpack_require__("1Nls");
 __webpack_require__("1ZrL");
 __webpack_require__("zO2v");
@@ -74,12 +72,12 @@ __webpack_require__("hzF8");
 __webpack_require__("T3fU");
 __webpack_require__("cDAr");
 __webpack_require__("7axH");
-__export(__webpack_require__("cQcD"));
-__export(__webpack_require__("hfOd"));
-__export(__webpack_require__("ZG0H"));
-__export(__webpack_require__("lRq6"));
-__export(__webpack_require__("UNZf"));
-__export(__webpack_require__("2HJH"));
+tslib_1.__exportStar(__webpack_require__("cQcD"), exports);
+tslib_1.__exportStar(__webpack_require__("hfOd"), exports);
+tslib_1.__exportStar(__webpack_require__("ZG0H"), exports);
+tslib_1.__exportStar(__webpack_require__("lRq6"), exports);
+tslib_1.__exportStar(__webpack_require__("UNZf"), exports);
+tslib_1.__exportStar(__webpack_require__("2HJH"), exports);
 
 
 /***/ }),
@@ -119,7 +117,7 @@ var chai = __webpack_require__("tyws");
 var expect = chai.expect;
 var Suite = Mocha.Suite;
 var Test = Mocha.Test;
-mocha.setup('bdd');
+mocha.setup({ ui: 'bdd' });
 var Observable_1 = __webpack_require__("rCTf");
 var src_1 = __webpack_require__("6sO2");
 var preventDefault = function (e) {
@@ -333,11 +331,16 @@ Observable_1.Observable.fromEvent(testButton, 'click').take(1).subscribe(functio
 Object.defineProperty(exports, "__esModule", { value: true });
 var Observable_1 = __webpack_require__("rCTf");
 var util_1 = __webpack_require__("2HJH");
-var scanFiles = function (entry) {
+var scanFiles = function (entry, isInsideDir) {
+    if (isInsideDir === void 0) { isInsideDir = false; }
     if (entry.isFile) {
         return Observable_1.Observable.create(function (observer) {
             entry.file(function (file) {
-                observer.next({ file: file, entry: entry });
+                try {
+                    file.path = isInsideDir ? entry.fullPath.slice(1) : '';
+                }
+                catch (_) { }
+                observer.next(file);
                 observer.complete();
             });
         });
@@ -349,7 +352,7 @@ var scanFiles = function (entry) {
                     observer.complete();
                 }
                 else {
-                    observer.next(Observable_1.Observable.from(entries).concatMap(scanFiles));
+                    observer.next(Observable_1.Observable.from(entries).concatMap(function (file) { return scanFiles(file, true); }));
                     observer.complete();
                 }
             });
@@ -394,17 +397,7 @@ exports.handleDrop = function (dropElement, options) {
                     .map(function (item) {
                     return item.webkitGetAsEntry();
                 })
-                    .concatMap(scanFiles)
-                    .map(function (_a) {
-                    var file = _a.file, entry = _a.entry;
-                    console.info(file, entry);
-                    var relativePath = entry.fullPath.slice(1);
-                    try {
-                        file.path = (options.directory && relativePath !== file.name) ? relativePath : '';
-                    }
-                    catch (_) { }
-                    return file;
-                });
+                    .concatMap(function (entry) { return scanFiles(entry); });
             }
             else if (files && files.length) {
                 files$ = Observable_1.Observable.from(Array.prototype.slice.call(files))
