@@ -64,6 +64,7 @@ export const handleDrop = (
     }
 
     dropElement.ondrop = (e) => {
+      enterCount = 0
       onHover(dropElement, false)
 
       if (!e.dataTransfer) {
