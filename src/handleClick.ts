@@ -13,6 +13,7 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
 
   if (!globalInputButton) {
     globalInputButton = document.createElement('input')
+    globalInputButton.id = 'rxjs-file-upload' // let people know where the empty input comes from
     globalInputButton.type = 'file'
     globalInputButton.setAttribute('style', 'position: fixed; left: 100%; top: 100%;')
     document.body.appendChild(globalInputButton)
