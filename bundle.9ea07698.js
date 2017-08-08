@@ -381,6 +381,7 @@ exports.handleDrop = function (dropElement, options) {
             e.preventDefault();
         };
         dropElement.ondrop = function (e) {
+            enterCount = 0;
             onHover(dropElement, false);
             if (!e.dataTransfer) {
                 return;
@@ -433,7 +434,10 @@ exports.handleClick = function (clickElement, config) {
     if (config === void 0) { config = {}; }
     if (!globalInputButton) {
         globalInputButton = document.createElement('input');
+        globalInputButton.id = 'rxjs-file-upload';
         globalInputButton.type = 'file';
+        globalInputButton.setAttribute('style', 'position: fixed; left: 100%; top: 100%;');
+        document.body.appendChild(globalInputButton);
     }
     var file$ = Observable_1.Observable.create(function (obs) {
         globalInputButton.accept = config.accept || '';
