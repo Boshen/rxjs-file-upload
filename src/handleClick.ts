@@ -14,6 +14,8 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
   if (!globalInputButton) {
     globalInputButton = document.createElement('input')
     globalInputButton.type = 'file'
+    globalInputButton.setAttribute('style', 'position: fixed; left: 100%; top: 100%;')
+    document.body.appendChild(globalInputButton)
   }
 
   const file$ = Observable.create((obs: Observer<File>) => {
