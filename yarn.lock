@@ -725,11 +725,11 @@ combined-stream@^1.0.5, combined-stream@~1.0.5:
   dependencies:
     delayed-stream "~1.0.0"
 
-commander@2.11.x, commander@^2.9.0, commander@~2.11.0:
+commander@2.11.x, commander@~2.11.0:
   version "2.11.0"
   resolved "http://registry.npm.taobao.org/commander/download/commander-2.11.0.tgz#157152fd1e7a6c8d98a5b715cf376df928004563"
 
-commander@2.9.0:
+commander@2.9.0, commander@^2.9.0:
   version "2.9.0"
   resolved "http://registry.npm.taobao.org/commander/download/commander-2.9.0.tgz#9c99094176e12240cb22d6c5146098400fe0f7d4"
   dependencies:
@@ -2131,7 +2131,7 @@ invert-kv@^1.0.0:
   version "1.0.0"
   resolved "http://registry.npm.taobao.org/invert-kv/download/invert-kv-1.0.0.tgz#104a8e4aaca6d3d8cd157a8ef8bfab2d7a3ffdb6"
 
-ip@^1.1.0:
+ip@^1.1.0, ip@^1.1.5:
   version "1.1.5"
   resolved "http://registry.npm.taobao.org/ip/download/ip-1.1.5.tgz#bdded70114290828c0a039e72ef25f5aaec4354a"
 
@@ -4229,9 +4229,9 @@ sinon-chai@^2.12.0:
   version "2.12.0"
   resolved "http://registry.npm.taobao.org/sinon-chai/download/sinon-chai-2.12.0.tgz#da71e9642ef7b893ba3cf2af806396a00aa45927"
 
-sinon@^3.0.0:
-  version "3.0.0"
-  resolved "http://registry.npm.taobao.org/sinon/download/sinon-3.0.0.tgz#f6919755c8c705e0b4ae977e8351bbcbaf6d91de"
+sinon@^3.2.0:
+  version "3.2.0"
+  resolved "http://registry.npm.taobao.org/sinon/download/sinon-3.2.0.tgz#8848a66ab6e8b80b5532e3824f59f83ea2628c77"
   dependencies:
     diff "^3.1.0"
     formatio "1.2.0"
@@ -4512,7 +4512,7 @@ style-loader@^0.18.2:
     loader-utils "^1.0.2"
     schema-utils "^0.3.0"
 
-supports-color@3.1.2, supports-color@^3.1.1:
+supports-color@3.1.2:
   version "3.1.2"
   resolved "http://registry.npm.taobao.org/supports-color/download/supports-color-3.1.2.tgz#72a262894d9d408b956ca05ff37b2ed8a6e2a2d5"
   dependencies:
@@ -4522,7 +4522,7 @@ supports-color@^2.0.0:
   version "2.0.0"
   resolved "http://registry.npm.taobao.org/supports-color/download/supports-color-2.0.0.tgz#535d045ce6b6363fa40117084629995e9df324c7"
 
-supports-color@^3.1.0, supports-color@^3.2.3:
+supports-color@^3.1.0, supports-color@^3.1.1, supports-color@^3.2.3:
   version "3.2.3"
   resolved "http://registry.npm.taobao.org/supports-color/download/supports-color-3.2.3.tgz#65ac0504b3954171d8a64946b2ae3cbb8a5f54f6"
   dependencies:
@@ -4958,9 +4958,9 @@ webpack-dev-middleware@^1.11.0:
     path-is-absolute "^1.0.0"
     range-parser "^1.0.3"
 
-webpack-dev-server@^2.6.1:
-  version "2.6.1"
-  resolved "http://registry.npm.taobao.org/webpack-dev-server/download/webpack-dev-server-2.6.1.tgz#0b292a9da96daf80a65988f69f87b4166e5defe7"
+webpack-dev-server@^2.7.1:
+  version "2.7.1"
+  resolved "http://registry.npm.taobao.org/webpack-dev-server/download/webpack-dev-server-2.7.1.tgz#21580f5a08cd065c71144cf6f61c345bca59a8b8"
   dependencies:
     ansi-html "0.0.7"
     bonjour "^3.5.0"
@@ -4972,6 +4972,7 @@ webpack-dev-server@^2.6.1:
     html-entities "^1.2.0"
     http-proxy-middleware "~0.17.4"
     internal-ip "^1.2.0"
+    ip "^1.1.5"
     loglevel "^1.4.1"
     opn "4.0.2"
     portfinder "^1.0.9"
@@ -4992,9 +4993,9 @@ webpack-sources@^1.0.1:
     source-list-map "^2.0.0"
     source-map "~0.5.3"
 
-webpack@^3.4.1:
-  version "3.4.1"
-  resolved "http://registry.npm.taobao.org/webpack/download/webpack-3.4.1.tgz#4c3f4f3fb318155a4db0cb6a36ff05c5697418f4"
+webpack@^3.5.4:
+  version "3.5.4"
+  resolved "http://registry.npm.taobao.org/webpack/download/webpack-3.5.4.tgz#5583eb263ed27b78b5bd17bfdfb0eb1b1cd1bf81"
   dependencies:
     acorn "^5.0.0"
     acorn-dynamic-import "^2.0.0"
