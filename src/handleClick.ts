@@ -9,8 +9,7 @@ export interface HandleClickConfig {
 
 let globalInputButton: HTMLInputElement | undefined
 
-export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig = {}): Observable<File[]> => {
-
+export const getFilesFromInput = (config: HandleClickConfig = {}): Observable<File[]> => {
   if (!globalInputButton) {
     globalInputButton = document.createElement('input')
     globalInputButton.id = 'rxjs-file-upload' // let people know where the empty input comes from
@@ -19,7 +18,7 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
     document.body.appendChild(globalInputButton)
   }
 
-  const file$ = Observable.create((obs: Observer<File>) => {
+  return Observable.create((obs: Observer<File>) => {
     globalInputButton!.accept = config.accept || ''
     globalInputButton!.multiple = config.directory || config.multiple || false
     globalInputButton!.webkitdirectory = config.directory || false
@@ -37,7 +36,10 @@ export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig
       globalInputButton!.value = ''
     }
   })
+}
 
+export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig = {}): Observable<File[]> => {
+  const file$ = getFilesFromInput(config)
   return Observable.fromEvent(clickElement, 'click')
     .switchMapTo(file$)
 }

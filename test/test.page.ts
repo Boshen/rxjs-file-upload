@@ -8,7 +8,7 @@ mocha.setup({ ui: 'bdd' })
 
 import { Observable } from 'rxjs/Observable'
 
-import { upload, chunkUpload, handleClick, handlePaste, handleDrop } from '../src'
+import { upload, chunkUpload, getFilesFromInput, handleClick, handlePaste, handleDrop } from '../src'
 
 const preventDefault = (e: Event) => {
   e.preventDefault()
@@ -230,6 +230,10 @@ handleUpload(
     onHover: console.log.bind(console, 'on hover 2')
   })
 )
+
+document.getElementById('trigger1')!.onclick = () => {
+  handleUpload(getFilesFromInput())
+}
 
 const testButton = document.getElementById('test')!
 Observable.fromEvent(testButton, 'click').take(1).subscribe(() => {
