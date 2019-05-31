@@ -1,5 +1,5 @@
-import { Observable } from 'rxjs/Observable'
-import { AjaxRequest, AjaxResponse } from 'rxjs/observable/dom/AjaxObservable'
+import { ajax, AjaxRequest, AjaxResponse } from 'rxjs/ajax'
+import { map } from 'rxjs/operators'
 
 export interface PostConfig {
   url: string
@@ -14,7 +14,7 @@ export const post = ({
   headers,
   progressSubscriber
 }: PostConfig) => {
-  return Observable.ajax({
+  return ajax({
     url,
     body,
     headers,
@@ -22,5 +22,7 @@ export const post = ({
     crossDomain: true,
     progressSubscriber
   })
-  .map((r: AjaxResponse) => r.response)
+    .pipe(
+      map((r: AjaxResponse) => r.response)
+    )
 }

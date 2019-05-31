@@ -1,5 +1,5 @@
-import { Observable } from 'rxjs/Observable'
-import { Observer } from 'rxjs/Observer'
+import { Observable,  Observer, fromEvent } from 'rxjs'
+import { switchMapTo } from 'rxjs/operators'
 
 export interface HandleClickConfig {
   multiple?: boolean
@@ -7,7 +7,7 @@ export interface HandleClickConfig {
   directory?: boolean
 }
 
-let globalInputButton: HTMLInputElement | undefined
+let globalInputButton!: HTMLInputElement
 
 export const getFilesFromInput = (config: HandleClickConfig = {}): Observable<File[]> => {
   if (!globalInputButton) {
@@ -19,14 +19,14 @@ export const getFilesFromInput = (config: HandleClickConfig = {}): Observable<Fi
   }
 
   return Observable.create((obs: Observer<File>) => {
-    globalInputButton!.accept = config.accept || ''
-    globalInputButton!.multiple = config.directory || config.multiple || false
-    globalInputButton!.webkitdirectory = config.directory || false
-    globalInputButton!.value = ''
-    globalInputButton!.onchange = () => {
+    globalInputButton.accept = config.accept || ''
+    globalInputButton.multiple = config.directory || config.multiple || false
+    globalInputButton['webkitdirectory'] = config.directory || false
+    globalInputButton.value = ''
+    globalInputButton.onchange = () => {
       const files = Array.prototype.slice.call(globalInputButton!.files)
       files.forEach((file: File) => {
-        (<any>file).path = file.webkitRelativePath
+        (<any>file).path = (<any>file).webkitRelativePath
       })
       obs.next(files)
       obs.complete()
@@ -40,6 +40,8 @@ export const getFilesFromInput = (config: HandleClickConfig = {}): Observable<Fi
 
 export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig = {}): Observable<File[]> => {
   const file$ = getFilesFromInput(config)
-  return Observable.fromEvent(clickElement, 'click')
-    .switchMapTo(file$)
+  return fromEvent(clickElement, 'click')
+    .pipe(
+      switchMapTo(file$)
+    )
 }

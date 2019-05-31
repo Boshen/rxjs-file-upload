@@ -30,7 +30,7 @@ module.exports = {
       test: /\.ts$/,
       loader: 'ts-loader',
       options: {
-        configFileName: 'tsconfig.test.json'
+        configFile: 'tsconfig.test.json'
       }
     }, {
       test: /\.css$/,

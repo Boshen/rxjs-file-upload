@@ -1,7 +1,5 @@
-import { Observable } from 'rxjs/Observable'
-import { Subject } from 'rxjs/Subject'
-import { ReplaySubject } from 'rxjs/ReplaySubject'
-import { Subscriber } from 'rxjs/Subscriber'
+import {  Subject ,  ReplaySubject ,  Subscriber, of, concat } from 'rxjs'
+import { filter, takeUntil, tap, merge, map, take, retryWhen, switchMap } from 'rxjs/operators'
 
 import { post } from './post'
 import { createAction } from './util'
@@ -57,26 +55,32 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
       progressSubject.next(pe.loaded / pe.total)
     }, () => {})
   })
-  .map(createAction('finish'))
-  .retryWhen((e$) => {
-    return e$
-      .do((e) => {
-        retrySubject.next(false)
-        errorSubject.next(e)
-      })
-      .switchMap(() => retrySubject.filter((b) => b))
-  })
+  .pipe(
+    map(createAction('finish')),
+    retryWhen((e$) => {
+      return e$
+        .pipe(
+          tap((e) => {
+            retrySubject.next(false)
+            errorSubject.next(e)
+          }),
+          switchMap(() => retrySubject.pipe(filter((b) => b)))
+        )
+    })
+  )
 
-  const upload$ = Observable.concat(
-    startSubject.take(1).map(createAction('start')),
-    Observable.of(createAction('retryable')(false)),
+  const upload$ = concat(
+    startSubject.pipe(take(1), map(createAction('start'))),
+    of(createAction('retryable')(false)),
     post$
   )
-    .takeUntil(abortSubject)
-    .do(() => {}, cleanUp, cleanUp)
-    .merge(progressSubject.map(createAction('progress')))
-    .merge(errorSubject.map((e) => createAction('error')(e)))
-    .merge(retrySubject.map((b) => createAction('retryable')(!b)))
+    .pipe(
+      takeUntil(abortSubject),
+      tap(() => {}, cleanUp, cleanUp),
+      merge(progressSubject.pipe(map(createAction('progress')))),
+      merge(errorSubject.pipe(map((e) => createAction('error')(e)))),
+      merge(retrySubject.pipe(map((b) => createAction('retryable')(!b))))
+    )
 
   const start = () => {
     if (!startSubject.closed) {

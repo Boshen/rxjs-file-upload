@@ -19,9 +19,7 @@
     "tslib": "^1.9.0"
   },
   "devDependencies": {
-    "@types/es6-shim": "^0.31.39",
     "@types/mocha": "^5.2.6",
-    "@types/phantomjs": "^1.9.29",
     "@types/sinon": "^7.0.12",
     "chai": "^4.2.0",
     "chunk-manifest-webpack-plugin": "^1.1.2",
@@ -46,6 +44,7 @@
     "typescript": "^3.5.1",
     "webpack": "^4.32.2",
     "webpack-chunk-hash": "^0.6.0",
+    "webpack-cli": "^3.3.2",
     "webpack-dev-server": "^3.4.1"
   },
   "files": [

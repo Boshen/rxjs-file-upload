@@ -1,5 +1,5 @@
-import { Observable } from 'rxjs/Observable'
-import { Observer } from 'rxjs/Observer'
+import { Observable,  Observer, from } from 'rxjs'
+import { filter, map, concatMap, toArray, switchAll } from 'rxjs/operators'
 
 import { excludeFolder } from './util'
 
@@ -12,7 +12,7 @@ export interface HandleDropOptions {
 const scanFiles = (entry: any, isInsideDir = false) => {
   if (entry.isFile) {
     return Observable.create((observer: Observer<any>) => {
-      (<WebKitFileEntry>entry).file((file: Event) => {
+      entry.file((file: Event) => {
         try {
           (<any>file).path = isInsideDir ? entry.fullPath.slice(1) : ''
         } catch (_) {}
@@ -22,15 +22,17 @@ const scanFiles = (entry: any, isInsideDir = false) => {
     })
   } else if (entry.isDirectory) {
     return Observable.create((observer: Observer<Observable<any>>) => {
-      (<WebKitDirectoryEntry>entry).createReader().readEntries((entries: any) => {
+      entry.createReader().readEntries((entries: any) => {
         if (entries.length === 0) {
           observer.complete()
         } else {
-          observer.next(Observable.from(entries).concatMap((file) => scanFiles(file, true)))
+          observer.next(from(entries).pipe(concatMap((file) => scanFiles(file, true))))
           observer.complete()
         }
       })
-    }).switch()
+    }).pipe(
+      switchAll()
+    )
   }
 }
 
@@ -77,24 +79,28 @@ export const handleDrop = (
       const files = e.dataTransfer.files
       let files$
       if (items && items.length) {
-        files$ = Observable.from(Array.prototype.slice.call(items))
-          .filter((item: DataTransferItem) => {
-            return item && item.kind === 'file' && !!item.webkitGetAsEntry
-          })
-          .map((item: DataTransferItem) => {
-            return item.webkitGetAsEntry()
-          })
-          .concatMap((entry) => scanFiles(entry))
+        files$ = from(Array.prototype.slice.call(items))
+          .pipe(
+            filter((item: DataTransferItem) => {
+              return item && item.kind === 'file' && !!item.webkitGetAsEntry
+            }),
+            map((item: DataTransferItem) => {
+              return item.webkitGetAsEntry()
+            }),
+            concatMap((entry: any) => scanFiles(entry))
+          )
       } else if (files && files.length) {
-        files$ = Observable.from(Array.prototype.slice.call(files))
-          .concatMap(excludeFolder)
-          .map((file: File) => {
-            (<any>file).path = ''
-            return file
-          })
+        files$ = from(Array.prototype.slice.call(files))
+          .pipe(
+            concatMap(excludeFolder),
+            map((file: File) => {
+              (<any>file).path = ''
+              return file
+            })
+          )
       }
       if (files$) {
-        files$.toArray()
+        files$.pipe(toArray())
           .subscribe((fs: File[]) => {
             obs.next(fs)
             onDrop(dropElement, fs)
