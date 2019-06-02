@@ -9,17 +9,12 @@ import { empty, of } from 'rxjs'
 import { filter } from 'rxjs/operators'
 import { createMockFile } from './util'
 
-import {
-  startChunkUpload,
-  finishChunkUpload,
-  chunkUpload,
-  createChunkUploadSubjects
-} from '../src/chunkUpload'
+import { startChunkUpload, finishChunkUpload, chunkUpload, createChunkUploadSubjects } from '../src/chunkUpload'
 
 const config = {
   getChunkStartUrl: () => '/upload/chunk',
   getChunkUrl: (_, i) => '/url' + i,
-  getChunkFinishUrl: (fileMeta) => `/uploadchunk/${fileMeta.fileKey}`
+  getChunkFinishUrl: (fileMeta) => `/uploadchunk/${fileMeta.fileKey}`,
 }
 
 const createChunks = (n) => {
@@ -31,7 +26,6 @@ const createChunks = (n) => {
 const chunkTests = [1, 2, 3, 10, 100].map(createChunks)
 
 chunkTests.forEach((chunks) => {
-
   const file = createMockFile('test.txt', chunks.map(() => 'x').join(''))
 
   const fileMeta: any = {
@@ -39,11 +33,10 @@ chunkTests.forEach((chunks) => {
     fileKey: 'fileKey',
     chunks: chunks.length,
     chunkSize: file.size / chunks.length,
-    uploadedChunks: []
+    uploadedChunks: [],
   }
 
   describe(`chunkUpload ${chunks.length} chunks`, () => {
-
     let server
 
     beforeEach(() => {
@@ -61,7 +54,6 @@ chunkTests.forEach((chunks) => {
     })
 
     describe('start -> progress -> finish', () => {
-
       it('should make requests', () => {
         const { upload$ } = chunkUpload(file, config)
         upload$.subscribe()
@@ -99,7 +91,7 @@ chunkTests.forEach((chunks) => {
         server.respond()
 
         expect(spy.callCount).to.equal(2)
-        expect(spy.getCall(0).args[0]).to.eql({ action: 'upload/progress', payload: 1 / fileMeta.fileSize})
+        expect(spy.getCall(0).args[0]).to.eql({ action: 'upload/progress', payload: 1 / fileMeta.fileSize })
         expect(spy.getCall(1).args[0]).to.eql({ action: 'upload/finish', payload: fileMeta })
       })
 
@@ -119,8 +111,14 @@ chunkTests.forEach((chunks) => {
 
         expect(progress.callCount).to.equal(chunks.length * 2)
         for (let i = 0; i < chunks.length; i++) {
-          expect(progress.getCall(i * 2).args[0].payload).to.be.closeTo((1 + (i * fileMeta.chunkSize)) / fileMeta.fileSize, 1e-6)
-          expect(progress.getCall(i * 2 + 1).args[0].payload).to.be.closeTo((i + 1) * fileMeta.chunkSize / fileMeta.fileSize, 1e-6)
+          expect(progress.getCall(i * 2).args[0].payload).to.be.closeTo(
+            (1 + i * fileMeta.chunkSize) / fileMeta.fileSize,
+            1e-6
+          )
+          expect(progress.getCall(i * 2 + 1).args[0].payload).to.be.closeTo(
+            ((i + 1) * fileMeta.chunkSize) / fileMeta.fileSize,
+            1e-6
+          )
         }
         expect(progress.getCall(progress.callCount - 1).args[0].payload).to.be.closeTo(1, 1e-6)
       })
@@ -207,11 +205,9 @@ chunkTests.forEach((chunks) => {
         expect(error).calledOnce
         expect(error.getCall(0).args[0].status).to.eql(401)
       })
-
     })
 
     describe('memory', () => {
-
       it('should not leak when complete', () => {
         const subjects = createChunkUploadSubjects()
         const { upload$ } = chunkUpload(file, config, subjects)
@@ -236,11 +232,9 @@ chunkTests.forEach((chunks) => {
         }
         expect(error).to.be.calledOnce
       })
-
     })
 
     describe('startChunkUpload', () => {
-
       it('should post', () => {
         startChunkUpload(file, config).subscribe()
         server.respond()
@@ -262,22 +256,18 @@ chunkTests.forEach((chunks) => {
         server.respond()
         expect(server.requests.length).to.equal(1)
       })
-
     })
 
     describe('finishChunkUpload', () => {
-
       it('should post', () => {
         finishChunkUpload(fileMeta, config).subscribe()
         server.respond()
         const request = server.requests[0]
         expect(request.url).to.equal(config.getChunkFinishUrl(fileMeta))
       })
-
     })
 
     describe('uploadAllChunks', () => {
-
       let startChunkUploadStub
       let finishChunkUploadStub
 
@@ -322,7 +312,6 @@ chunkTests.forEach((chunks) => {
       })
 
       if (chunks.length <= 3) {
-
         it('should pause and resume chunk upload', () => {
           const { pause, resume, upload$ } = chunkUpload(file, config)
           upload$.subscribe()
@@ -335,7 +324,6 @@ chunkTests.forEach((chunks) => {
           }
 
           pause()
-
 
           expect(server.requests.length).to.equal(numbRequests)
           for (let i = 0; i < numbRequests; i++) {
@@ -389,7 +377,7 @@ chunkTests.forEach((chunks) => {
           retry()
 
           expect(server.requests.length).to.equal(numbRequests * 2)
-          for(let i = 0; i < numbRequests; i++) {
+          for (let i = 0; i < numbRequests; i++) {
             expect(server.requests[numbRequests + i].url).to.equal(config.getChunkUrl(fileMeta, i))
             expect(server.requests[numbRequests + i].status).to.equal(200)
             expect(server.requests[numbRequests + i].readyState).to.equal(4)
@@ -398,7 +386,6 @@ chunkTests.forEach((chunks) => {
       }
 
       if (chunks.length > 3) {
-
         it('should pause and resume chunk upload', () => {
           const { pause, resume, upload$ } = chunkUpload(file, config)
           upload$.subscribe()
@@ -457,55 +444,46 @@ chunkTests.forEach((chunks) => {
             expect(server.requests[i + 3].url).to.equal(config.getChunkUrl(fileMeta, i))
           }
         })
-
       }
 
       it('should not pause, resume or retry after completion', () => {
-          const { pause, resume, retry, upload$ } = chunkUpload(file, config)
-          upload$.subscribe()
+        const { pause, resume, retry, upload$ } = chunkUpload(file, config)
+        upload$.subscribe()
 
-          pause()
-          pause()
-          pause()
+        pause()
+        pause()
+        pause()
 
-          resume()
-          resume()
-          resume()
+        resume()
+        resume()
+        resume()
 
-          server.respondImmediately = true
-          server.respond()
+        server.respondImmediately = true
+        server.respond()
 
-          expect(() => pause()).not.to.throw()
-          expect(() => resume()).not.to.throw()
-          expect(() => retry()).not.to.throw()
+        expect(() => pause()).not.to.throw()
+        expect(() => resume()).not.to.throw()
+        expect(() => retry()).not.to.throw()
 
-          if (chunks.length < 3) {
-            expect(server.requests.length).to.equal(chunks.length * 2)
-          } else {
-            expect(server.requests.length).to.equal(chunks.length + 3)
-          }
+        if (chunks.length < 3) {
+          expect(server.requests.length).to.equal(chunks.length * 2)
+        } else {
+          expect(server.requests.length).to.equal(chunks.length + 3)
+        }
       })
 
-      it('should send upload/retry when we can/cannot retry', () => {
-      })
+      it('should send upload/retry when we can/cannot retry', () => {})
 
-      it('should send upload/pause when we can/cannot pause', () => {
-      })
+      it('should send upload/pause when we can/cannot pause', () => {})
 
-      it('should send upload/resume when we can/cannot resume', () => {
-      })
+      it('should send upload/resume when we can/cannot resume', () => {})
 
-      it('should send upload/abort when we can/cannot abort', () => {
-      })
+      it('should send upload/abort when we can/cannot abort', () => {})
 
-      it('should indicate all files are uploaded', () => {
-      })
+      it('should indicate all files are uploaded', () => {})
 
       // it.skip('should timeout requests', () => {
       // })
-
     })
-
   })
-
 })

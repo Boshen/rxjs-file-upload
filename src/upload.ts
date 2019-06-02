@@ -1,4 +1,4 @@
-import {  Subject ,  ReplaySubject ,  Subscriber, of, concat } from 'rxjs'
+import { Subject, ReplaySubject, Subscriber, of, concat } from 'rxjs'
 import { filter, takeUntil, tap, merge, map, take, retryWhen, switchMap } from 'rxjs/operators'
 
 import { post } from './post'
@@ -16,7 +16,7 @@ export const createUploadSubjects = () => {
     retrySubject: new Subject<boolean>(),
     abortSubject: new Subject(),
     progressSubject: new Subject<number>(),
-    errorSubject: new Subject<boolean>()
+    errorSubject: new Subject<boolean>(),
   }
 }
 
@@ -29,7 +29,6 @@ const createFormData = (file: File) => {
 }
 
 export const upload = (file: File, config: UploadConfig, controlSubjects = createUploadSubjects()) => {
-
   const { startSubject, retrySubject, abortSubject, progressSubject, errorSubject } = controlSubjects
 
   const cleanUp = () => {
@@ -51,36 +50,39 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     headers: {
       ...config.headers,
     },
-    progressSubscriber: Subscriber.create((pe: ProgressEvent) => {
-      progressSubject.next(pe.loaded / pe.total)
-    }, () => {})
-  })
-  .pipe(
+    progressSubscriber: Subscriber.create(
+      (pe: ProgressEvent) => {
+        progressSubject.next(pe.loaded / pe.total)
+      },
+      () => {}
+    ),
+  }).pipe(
     map(createAction('finish')),
     retryWhen((e$) => {
-      return e$
-        .pipe(
-          tap((e) => {
-            retrySubject.next(false)
-            errorSubject.next(e)
-          }),
-          switchMap(() => retrySubject.pipe(filter((b) => b)))
-        )
+      return e$.pipe(
+        tap((e) => {
+          retrySubject.next(false)
+          errorSubject.next(e)
+        }),
+        switchMap(() => retrySubject.pipe(filter((b) => b)))
+      )
     })
   )
 
   const upload$ = concat(
-    startSubject.pipe(take(1), map(createAction('start'))),
+    startSubject.pipe(
+      take(1),
+      map(createAction('start'))
+    ),
     of(createAction('retryable')(false)),
     post$
+  ).pipe(
+    takeUntil(abortSubject),
+    tap(() => {}, cleanUp, cleanUp),
+    merge(progressSubject.pipe(map(createAction('progress')))),
+    merge(errorSubject.pipe(map((e) => createAction('error')(e)))),
+    merge(retrySubject.pipe(map((b) => createAction('retryable')(!b))))
   )
-    .pipe(
-      takeUntil(abortSubject),
-      tap(() => {}, cleanUp, cleanUp),
-      merge(progressSubject.pipe(map(createAction('progress')))),
-      merge(errorSubject.pipe(map((e) => createAction('error')(e)))),
-      merge(retrySubject.pipe(map((b) => createAction('retryable')(!b))))
-    )
 
   const start = () => {
     if (!startSubject.closed) {
@@ -93,10 +95,18 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
   }
 
   return {
-    retry: () => { if (!retrySubject.closed) { retrySubject.next(true) } },
-    abort: () => { if (!abortSubject.closed) { abortSubject.next() } },
+    retry: () => {
+      if (!retrySubject.closed) {
+        retrySubject.next(true)
+      }
+    },
+    abort: () => {
+      if (!abortSubject.closed) {
+        abortSubject.next()
+      }
+    },
     start,
 
-    upload$
+    upload$,
   }
 }

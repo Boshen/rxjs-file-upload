@@ -32,6 +32,7 @@
     "karma-typescript": "^4.0.0",
     "karma-verbose-reporter": "^0.0.6",
     "mocha": "^6.1.4",
+    "prettier": "^1.17.1",
     "rxjs": "^6.5.2",
     "sinon": "^7.3.2",
     "sinon-chai": "^3.3.0",
@@ -47,8 +48,13 @@
     "webpack-cli": "^3.3.2",
     "webpack-dev-server": "^3.4.1"
   },
-  "files": [
-    "dist/*",
-    "src/*"
-  ]
+  "files": ["dist/*", "src/*"],
+  "prettier": {
+    "printWidth": 120,
+    "semi": false,
+    "trailingComma": "es5",
+    "singleQuote": true,
+    "arrowParens": "always",
+    "parser": "typescript"
+  }
 }

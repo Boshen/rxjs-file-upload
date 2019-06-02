@@ -1,4 +1,4 @@
-import { Observable,  Observer, from } from 'rxjs'
+import { Observable, Observer, from } from 'rxjs'
 import { filter, map, concatMap, toArray, switchAll } from 'rxjs/operators'
 
 import { excludeFolder } from './util'
@@ -30,17 +30,11 @@ const scanFiles = (entry: any, isInsideDir = false) => {
           observer.complete()
         }
       })
-    }).pipe(
-      switchAll()
-    )
+    }).pipe(switchAll())
   }
 }
 
-export const handleDrop = (
-  dropElement: HTMLElement,
-  options: Partial<HandleDropOptions> = {}
-): Observable<File[]> => {
-
+export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDropOptions> = {}): Observable<File[]> => {
   const onDrop = options.onDrop || (() => {})
   const onHover = options.onHover || (() => {})
 
@@ -79,34 +73,30 @@ export const handleDrop = (
       const files = e.dataTransfer.files
       let files$
       if (items && items.length) {
-        files$ = from(Array.prototype.slice.call(items))
-          .pipe(
-            filter((item: DataTransferItem) => {
-              return item && item.kind === 'file' && !!item.webkitGetAsEntry
-            }),
-            map((item: DataTransferItem) => {
-              return item.webkitGetAsEntry()
-            }),
-            concatMap((entry: any) => scanFiles(entry))
-          )
+        files$ = from(Array.prototype.slice.call(items)).pipe(
+          filter((item: DataTransferItem) => {
+            return item && item.kind === 'file' && !!item.webkitGetAsEntry
+          }),
+          map((item: DataTransferItem) => {
+            return item.webkitGetAsEntry()
+          }),
+          concatMap((entry: any) => scanFiles(entry))
+        )
       } else if (files && files.length) {
-        files$ = from(Array.prototype.slice.call(files))
-          .pipe(
-            concatMap(excludeFolder),
-            map((file: File) => {
-              (<any>file).path = ''
-              return file
-            })
-          )
+        files$ = from(Array.prototype.slice.call(files)).pipe(
+          concatMap(excludeFolder),
+          map((file: File) => {
+            (<any>file).path = ''
+            return file
+          })
+        )
       }
       if (files$) {
-        files$.pipe(toArray())
-          .subscribe((fs: File[]) => {
-            obs.next(fs)
-            onDrop(dropElement, fs)
-          })
+        files$.pipe(toArray()).subscribe((fs: File[]) => {
+          obs.next(fs)
+          onDrop(dropElement, fs)
+        })
       }
     }
   })
-
 }

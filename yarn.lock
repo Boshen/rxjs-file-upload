@@ -4511,6 +4511,11 @@ prepend-http@^1.0.0:
   version "1.0.4"
   resolved "http://registry.npm.taobao.org/prepend-http/download/prepend-http-1.0.4.tgz#d4f4562b0ce3696e41ac52d0e002e57a635dc6dc"
 
+prettier@^1.17.1:
+  version "1.17.1"
+  resolved "https://registry.npm.taobao.org/prettier/download/prettier-1.17.1.tgz#ed64b4e93e370cb8a25b9ef7fef3e4fd1c0995db"
+  integrity sha1-7WS06T43DLiiW573/vPk/RwJlds=
+
 pretty-error@^2.0.2:
   version "2.1.1"
   resolved "http://registry.npm.taobao.org/pretty-error/download/pretty-error-2.1.1.tgz#5f4f87c8f91e5ae3f3ba87ab4cf5e03b1a17f1a3"

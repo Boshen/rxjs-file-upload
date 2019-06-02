@@ -9,13 +9,11 @@ import { upload } from '../src/upload'
 import { createMockFile } from './util'
 
 describe('upload', () => {
-
   const baseurl = '/upload'
   const config = {
-    getUploadUrl: () => baseurl
+    getUploadUrl: () => baseurl,
   }
-  const fileMeta = {
-  }
+  const fileMeta = {}
   const file = createMockFile('test.txt', 'x')
   const url = baseurl
 
@@ -23,7 +21,7 @@ describe('upload', () => {
 
   beforeEach(() => {
     server = sinon.fakeServer.create()
-      server.respondWith('POST', url, [200, {}, JSON.stringify(fileMeta)])
+    server.respondWith('POST', url, [200, {}, JSON.stringify(fileMeta)])
   })
 
   afterEach(() => {
@@ -43,5 +41,4 @@ describe('upload', () => {
     expect(request.method).to.equal('POST')
     expect(request.status).to.equal(200)
   })
-
 })

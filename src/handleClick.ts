@@ -1,4 +1,4 @@
-import { Observable,  Observer, fromEvent } from 'rxjs'
+import { Observable, Observer, fromEvent } from 'rxjs'
 import { switchMapTo } from 'rxjs/operators'
 
 export interface HandleClickConfig {
@@ -40,8 +40,5 @@ export const getFilesFromInput = (config: HandleClickConfig = {}): Observable<Fi
 
 export const handleClick = (clickElement: HTMLElement, config: HandleClickConfig = {}): Observable<File[]> => {
   const file$ = getFilesFromInput(config)
-  return fromEvent(clickElement, 'click')
-    .pipe(
-      switchMapTo(file$)
-    )
+  return fromEvent(clickElement, 'click').pipe(switchMapTo(file$))
 }
