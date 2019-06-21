@@ -2,6 +2,7 @@ import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
 import { ReplaySubject } from 'rxjs/ReplaySubject'
 import { Subscriber } from 'rxjs/Subscriber'
+import { Observer } from 'rxjs/Observer'
 
 import { post } from './post'
 import { createAction } from './util'
@@ -141,7 +142,7 @@ export const createChunkUploadSubjects = () => {
   return {
     startSubject: new ReplaySubject(1),
     retrySubject: new Subject<boolean>(),
-    abortSubject: new Subject(),
+    abortSubject: new ReplaySubject(1),
     progressSubject: new Subject<ChunkProgress>(),
     controlSubject: new Subject<boolean>(),
     errorSubject: new Subject<boolean>()
@@ -181,7 +182,7 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
     .take(1)
 
   const progress$ = progressSubject
-    .scan((acc: {[index: number]: number}, cp: ChunkProgress) => {
+    .scan((acc: { [index: number]: number }, cp: ChunkProgress) => {
       acc[cp.index] = cp.loaded
       return acc
     }, {})
@@ -204,40 +205,52 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
       return finishChunkUpload(fileMeta, config)
     })
 
-  const upload$ = Observable.concat(
-    startSubject.take(1).map(createAction('start')),
-    Observable.of(createAction('pausable')(true)),
-    Observable.of(createAction('retryable')(false)),
-
-    start$.map(createAction('chunkstart')),
-    progress$,
-    finish$.map(createAction('finish')),
-
-    Observable.of(createAction('pausable')(false)),
-    Observable.of(createAction('retryable')(false))
-  )
-    .retryWhen((e$) => {
-      return e$
-        .do((e) => {
-          errorSubject.next(e)
-          retrySubject.next(false)
-        })
-        .switchMap((e: Error) => {
-          if (e.message === 'Multiple_Chunk_Upload_Error') {
-            return retrySubject.filter((b) => b)
-          } else {
-            return Observable.throw(e)
-          }
-        })
-    })
-    .takeUntil(abortSubject)
-    .do(() => {}, cleanUp, cleanUp)
-    .merge(errorSubject.map((e) => createAction('error')(e)))
-    .merge(retrySubject.map((b) => createAction('retryable')(!b)))
-    .merge(abortSubject.concatMap(() => Observable.of(
+  const upload$ = Observable.create((observer: Observer<{ action: string, payload: {} }>) => {
+    const abortSubs = abortSubject.take(1).concatMap(() => Observable.of(
       createAction('pausable')(false),
       createAction('retryable')(false)
-    )))
+    )).subscribe((action) => {
+      observer.next(action)
+      observer.complete()
+    })
+
+    const subs = Observable.concat(
+      startSubject.take(1).map(createAction('start')),
+      Observable.of(createAction('pausable')(true)),
+      Observable.of(createAction('retryable')(false)),
+
+      start$.map(createAction('chunkstart')),
+      progress$,
+      finish$.map(createAction('finish')),
+
+      Observable.of(createAction('pausable')(false)),
+      Observable.of(createAction('retryable')(false))
+    )
+      .retryWhen((e$) => {
+        return e$
+          .do((e) => {
+            errorSubject.next(e)
+            retrySubject.next(false)
+          })
+          .switchMap((e: Error) => {
+            if (e.message === 'Multiple_Chunk_Upload_Error') {
+              return retrySubject.filter((b) => b)
+            } else {
+              return Observable.throw(e)
+            }
+          })
+      })
+      .takeUntil(abortSubject)
+      .do(() => { }, cleanUp, cleanUp)
+      .merge(errorSubject.map((e) => createAction('error')(e)))
+      .merge(retrySubject.map((b) => createAction('retryable')(!b)))
+      .subscribe(observer)
+
+    return () => {
+      subs.unsubscribe()
+      abortSubs.unsubscribe()
+    }
+  })
 
   const start = () => {
     if (!startSubject.closed) {
@@ -253,7 +266,7 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
     pause: () => { if (!controlSubject.closed) { controlSubject.next(true) } },
     resume: () => { if (!controlSubject.closed) { controlSubject.next(false) } },
     retry: () => { if (!retrySubject.closed) { retrySubject.next(true) } },
-    abort: () => { if (!abortSubject.closed) { abortSubject.next() } },
+    abort: () => { if (!abortSubject.closed) { abortSubject.next(true) } },
     start,
 
     upload$
