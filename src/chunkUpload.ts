@@ -1,5 +1,6 @@
 import {
   Observable,
+  Observer,
   ReplaySubject,
   Subject,
   Subscriber,
@@ -180,7 +181,7 @@ export const createChunkUploadSubjects = () => {
   return {
     startSubject: new ReplaySubject(1),
     retrySubject: new Subject<boolean>(),
-    abortSubject: new Subject(),
+    abortSubject: new ReplaySubject(1),
     progressSubject: new Subject<ChunkProgress>(),
     controlSubject: new Subject<boolean>(),
     errorSubject: new Subject<boolean>(),
@@ -242,42 +243,61 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
     })
   )
 
-  const upload$ = concat(
-    startSubject.pipe(
-      take(1),
-      map(createAction('start'))
-    ),
-    of(createAction('pausable')(true)),
-    of(createAction('retryable')(false)),
-
-    start$.pipe(map(createAction('chunkstart'))),
-    progress$,
-    finish$.pipe(map(createAction('finish'))),
-
-    of(createAction('pausable')(false)),
-    of(createAction('retryable')(false))
-  ).pipe(
-    retryWhen((e$) => {
-      return e$.pipe(
-        tap((e) => {
-          errorSubject.next(e)
-          retrySubject.next(false)
-        }),
-        switchMap((e: Error) => {
-          if (e.message === 'Multiple_Chunk_Upload_Error') {
-            return retrySubject.pipe(filter((b) => b))
-          } else {
-            return observableThrowError(e)
-          }
-        })
+  const upload$ = Observable.create((observer: Observer<{ action: string; payload: {} }>) => {
+    const abortSubs = abortSubject
+      .pipe(
+        take(1),
+        concatMap(() => of(createAction('pausable')(false), createAction('retryable')(false)))
       )
-    }),
-    takeUntil(abortSubject),
-    tap(() => {}, cleanUp, cleanUp),
-    merge(errorSubject.pipe(map((e) => createAction('error')(e)))),
-    merge(retrySubject.pipe(map((b) => createAction('retryable')(!b)))),
-    merge(abortSubject.pipe(concatMap(() => of(createAction('pausable')(false), createAction('retryable')(false)))))
-  )
+      .subscribe((action) => {
+        observer.next(action)
+        observer.complete()
+      })
+
+    const subs = concat(
+      startSubject.pipe(
+        take(1),
+        map(createAction('start'))
+      ),
+      of(createAction('pausable')(true)),
+      of(createAction('retryable')(false)),
+
+      start$.pipe(map(createAction('chunkstart'))),
+      progress$,
+      finish$.pipe(map(createAction('finish'))),
+
+      of(createAction('pausable')(false)),
+      of(createAction('retryable')(false))
+    )
+      .pipe(
+        retryWhen((e$) => {
+          return e$.pipe(
+            tap((e) => {
+              errorSubject.next(e)
+              retrySubject.next(false)
+            }),
+            switchMap((e: Error) => {
+              if (e.message === 'Multiple_Chunk_Upload_Error') {
+                return retrySubject.pipe(filter((b) => b))
+              } else {
+                return observableThrowError(e)
+              }
+            })
+          )
+        }),
+        takeUntil(abortSubject),
+        tap(() => {}, cleanUp, cleanUp),
+        merge(errorSubject.pipe(map((e) => createAction('error')(e)))),
+        merge(retrySubject.pipe(map((b) => createAction('retryable')(!b)))),
+        merge(abortSubject.pipe(concatMap(() => of(createAction('pausable')(false), createAction('retryable')(false)))))
+      )
+      .subscribe(observer)
+
+    return () => {
+      subs.unsubscribe()
+      abortSubs.unsubscribe()
+    }
+  })
 
   const start = () => {
     if (!startSubject.closed) {
