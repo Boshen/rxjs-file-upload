@@ -2,7 +2,6 @@ import { Observable } from 'rxjs/Observable'
 import { Subject } from 'rxjs/Subject'
 import { ReplaySubject } from 'rxjs/ReplaySubject'
 import { Subscriber } from 'rxjs/Subscriber'
-import { Observer } from 'rxjs/Observer'
 
 import { post } from './post'
 import { createAction } from './util'
@@ -205,7 +204,7 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
       return finishChunkUpload(fileMeta, config)
     })
 
-  const upload$ = Observable.create((observer: Observer<{ action: string, payload: {} }>) => {
+  const upload$ = new Observable<{ action: string, payload: {} }>((observer) => {
     const abortSubs = abortSubject.take(1).concatMap(() => Observable.of(
       createAction('pausable')(false),
       createAction('retryable')(false)
