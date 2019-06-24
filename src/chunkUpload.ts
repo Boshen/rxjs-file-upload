@@ -250,7 +250,7 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
       subs.unsubscribe()
       abortSubs.unsubscribe()
     }
-  })
+  }) as Observable<{ action: string, payload: {} }>
 
   const start = () => {
     if (!startSubject.closed) {
