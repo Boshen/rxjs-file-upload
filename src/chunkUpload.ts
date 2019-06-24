@@ -1,6 +1,5 @@
 import {
   Observable,
-  Observer,
   ReplaySubject,
   Subject,
   Subscriber,
@@ -243,7 +242,7 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
     })
   )
 
-  const upload$ = Observable.create((observer: Observer<{ action: string; payload: {} }>) => {
+  const upload$ = new Observable<{ action: string; payload: {} }>((observer) => {
     const abortSubs = abortSubject
       .pipe(
         take(1),
