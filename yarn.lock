@@ -73,8 +73,8 @@
 
 "@types/mocha@^7.0.1":
   version "7.0.1"
-  resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-7.0.1.tgz#5d7ec2a789a1f77c59b7ad071b9d50bf1abbfc9e"
-  integrity sha512-L/Nw/2e5KUaprNJoRA33oly+M8X8n0K+FwLTbYqwTcR14wdPWeRkigBLfSFpN/Asf9ENZTMZwLxjtjeYucAA4Q==
+  resolved "https://registry.npm.taobao.org/@types/mocha/download/@types/mocha-7.0.1.tgz?cache=0&sync_timestamp=1580334513974&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fmocha%2Fdownload%2F%40types%2Fmocha-7.0.1.tgz#5d7ec2a789a1f77c59b7ad071b9d50bf1abbfc9e"
+  integrity sha1-XX7Cp4mh93xZt60HG51Qvxq7/J4=
 
 "@types/node@*":
   version "12.6.9"
