@@ -226,7 +226,7 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
       return acc
     }, {}),
     combineLatest(start$),
-    map(([acc, fileMeta]: [number, FileMeta]) => {
+    map(([acc, fileMeta]) => {
       return Object.keys(acc).reduce((t, i: string) => t + acc[i], 0) / fileMeta.fileSize
     }),
     distinctUntilChanged((x: number, y: number) => x > y),

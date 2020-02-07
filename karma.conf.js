@@ -1,6 +1,6 @@
 module.exports = function(config) {
   config.set({
-    frameworks: ['mocha', 'karma-typescript'],
+    frameworks: ['mocha', 'karma-typescript', 'es6-shim'],
 
     browsers: ['PhantomJS'],
 
