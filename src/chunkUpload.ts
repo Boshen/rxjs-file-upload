@@ -254,10 +254,7 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
       })
 
     const subs = concat(
-      startSubject.pipe(
-        take(1),
-        map(createAction('start'))
-      ),
+      startSubject.pipe(take(1), map(createAction('start'))),
       of(createAction('pausable')(true)),
       of(createAction('retryable')(false)),
 

@@ -26,7 +26,7 @@ export const getFilesFromInput = (config: HandleClickConfig = {}): Observable<Fi
     globalInputButton.onchange = () => {
       const files = Array.prototype.slice.call(globalInputButton!.files)
       files.forEach((file: File) => {
-        (<any>file).path = (<any>file).webkitRelativePath
+        ;(<any>file).path = (<any>file).webkitRelativePath
       })
       obs.next(files)
       obs.complete()

@@ -16,7 +16,8 @@
     "deploy": "yarn run page && gh-pages -d page",
     "watch": "karma start",
     "test": "karma start --single-run",
-    "build": "rm -rf dist && yarn lint && tsc"
+    "build": "rm -rf dist && yarn lint && tsc",
+    "prettier": "prettier --write './{src,test}/**/*.ts'"
   },
   "peerDependencies": {
     "rxjs": "^6.5.0",

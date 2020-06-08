@@ -70,10 +70,7 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
   )
 
   const upload$ = concat(
-    startSubject.pipe(
-      take(1),
-      map(createAction('start'))
-    ),
+    startSubject.pipe(take(1), map(createAction('start'))),
     of(createAction('retryable')(false)),
     post$
   ).pipe(
