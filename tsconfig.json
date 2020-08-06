@@ -4,7 +4,7 @@
     "emitDecoratorMetadata": false,
     "experimentalDecorators": false,
     "importHelpers": true,
-    "module": "commonjs",
+    "module": "es6",
     "moduleResolution": "node",
     "newLine": "LF",
     "noEmitHelpers": true,
@@ -18,7 +18,7 @@
     "inlineSourceMap": true,
     "strictNullChecks": true,
     "suppressImplicitAnyIndexErrors": true,
-    "target": "ES5"
+    "target": "ES6"
   },
   "include": ["src"]
 }
