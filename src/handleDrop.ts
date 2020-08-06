@@ -14,7 +14,7 @@ const scanFiles = (entry: any, isInsideDir = false) => {
     return Observable.create((observer: Observer<any>) => {
       entry.file((file: Event) => {
         try {
-          ;(<any>file).path = isInsideDir ? entry.fullPath.slice(1) : ''
+          (<any>file).path = isInsideDir ? entry.fullPath.slice(1) : ''
         } catch (_) {}
         observer.next(file)
         observer.complete()
@@ -86,7 +86,7 @@ export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDrop
         files$ = from(Array.prototype.slice.call(files)).pipe(
           concatMap(excludeFolder),
           map((file: File) => {
-            ;(<any>file).path = ''
+            (<any>file).path = ''
             return file
           })
         )
