@@ -1,4 +1,4 @@
-import { Observable, Observer, from, of } from 'rxjs'
+import { Observable, Observer, from, EMPTY } from 'rxjs'
 import { filter, map, concatMap, toArray, switchAll } from 'rxjs/operators'
 
 import { excludeFolder } from './util'
@@ -9,7 +9,7 @@ export interface HandleDropOptions {
   onDrop: (e: HTMLElement, files: File[]) => void
 }
 
-const scanFiles = (entry: any, isInsideDir = false): Observable<File[]> => {
+const scanFiles = (entry: any, isInsideDir = false): Observable<File> => {
   if (entry.isFile) {
     return new Observable((observer: Observer<any>) => {
       entry.file((file: Event) => {
@@ -31,9 +31,8 @@ const scanFiles = (entry: any, isInsideDir = false): Observable<File[]> => {
         }
       })
     }).pipe(switchAll())
-  } else {
-    return of([])
   }
+  return EMPTY
 }
 
 export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDropOptions> = {}): Observable<File[]> => {
@@ -73,7 +72,7 @@ export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDrop
 
       const items = e.dataTransfer.items
       const files = e.dataTransfer.files
-      let files$: Observable<File[]> | undefined
+      let files$: Observable<File> | undefined
       if (items && items.length) {
         files$ = from(Array.prototype.slice.call(items)).pipe(
           filter((item: DataTransferItem) => {
@@ -82,7 +81,7 @@ export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDrop
           map((item: DataTransferItem) => {
             return item.webkitGetAsEntry()
           }),
-          concatMap((entry: any) => scanFiles(entry))
+          concatMap((entry: any) => scanFiles(entry)),
         )
       } else if (files && files.length) {
         files$ = from(Array.prototype.slice.call(files)).pipe(
@@ -91,11 +90,10 @@ export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDrop
             ;(<any>file).path = ''
             return file
           }),
-          toArray()
         )
       }
       if (files$) {
-        files$.subscribe((fs: File[]) => {
+        files$.pipe(toArray()).subscribe((fs: File[]) => {
           obs.next(fs)
           onDrop(dropElement, fs)
         })
