@@ -1,5 +1,5 @@
-import { Subject, ReplaySubject, Subscriber, of, concat } from 'rxjs'
-import { filter, takeUntil, tap, merge, map, take, retryWhen, switchMap } from 'rxjs/operators'
+import { Subject, ReplaySubject, of, concat } from 'rxjs'
+import { filter, takeUntil, tap, mergeWith, map, take, retryWhen, switchMap } from 'rxjs/operators'
 
 import { post } from './post'
 import { createAction } from './util'
@@ -50,12 +50,11 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     headers: {
       ...config.headers,
     },
-    progressSubscriber: Subscriber.create(
-      (pe: ProgressEvent) => {
+    progressSubscriber: {
+      next(pe: ProgressEvent) {
         progressSubject.next(pe.loaded / pe.total)
       },
-      () => {}
-    ),
+    },
   }).pipe(
     map(createAction('finish')),
     retryWhen((e$) => {
@@ -75,10 +74,10 @@ export const upload = (file: File, config: UploadConfig, controlSubjects = creat
     post$
   ).pipe(
     takeUntil(abortSubject),
-    tap(() => {}, cleanUp, cleanUp),
-    merge(progressSubject.pipe(map(createAction('progress')))),
-    merge(errorSubject.pipe(map((e) => createAction('error')(e)))),
-    merge(retrySubject.pipe(map((b) => createAction('retryable')(!b))))
+    tap({ error: cleanUp, complete: cleanUp }),
+    mergeWith(progressSubject.pipe(map(createAction('progress')))),
+    mergeWith(errorSubject.pipe(map((e) => createAction('error')(e)))),
+    mergeWith(retrySubject.pipe(map((b) => createAction('retryable')(!b))))
   )
 
   const start = () => {

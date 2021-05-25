@@ -2,10 +2,9 @@ import {
   Observable,
   ReplaySubject,
   Subject,
-  Subscriber,
   concat,
   defer,
-  empty,
+  EMPTY,
   from,
   of,
   partition,
@@ -13,12 +12,12 @@ import {
 } from 'rxjs'
 import {
   catchError,
-  combineLatest,
+  combineLatestWith,
   concatMap,
   distinctUntilChanged,
   filter,
   map,
-  merge,
+  mergeWith,
   mergeAll,
   mergeScan,
   repeatWhen,
@@ -132,7 +131,7 @@ export const uploadAllChunks = (
     let completed = false
     return defer(() => {
       if (completed) {
-        return empty()
+        return EMPTY
       }
       return post({
         url: config.getChunkUrl(fileMeta, index),
@@ -141,12 +140,11 @@ export const uploadAllChunks = (
           ...config.headers,
           'Content-Type': 'application/octet-stream',
         },
-        progressSubscriber: Subscriber.create(
-          (pe: ProgressEvent) => {
+        progressSubscriber: {
+          next(pe: ProgressEvent) {
             progressSubject.next({ index, loaded: pe.loaded })
           },
-          () => {}
-        ),
+        },
       }).pipe(
         tap(() => (completed = true)),
         map(() => ({ index, completed: true })),
@@ -163,7 +161,7 @@ export const uploadAllChunks = (
         const errorsCount = Object.keys(acc.errors).length
         if (errorsCount) {
           acc.errors = {}
-          return observableThrowError(new Error('Multiple_Chunk_Upload_Error'))
+          return observableThrowError(() => new Error('Multiple_Chunk_Upload_Error'))
         } else {
           return of(acc)
         }
@@ -225,14 +223,14 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
       acc[cp.index] = cp.loaded
       return acc
     }, {}),
-    combineLatest(start$),
+    combineLatestWith(start$),
     map(([acc, fileMeta]) => {
       return Object.keys(acc).reduce((t, i: string) => t + acc[i], 0) / fileMeta.fileSize
     }),
     distinctUntilChanged((x: number, y: number) => x > y),
     map(createAction('progress')),
-    merge(pause$.pipe(concatMap(() => of(createAction('pausable')(false))))),
-    merge(resume$.pipe(concatMap(() => of(createAction('pausable')(true))))),
+    mergeWith(pause$.pipe(concatMap(() => of(createAction('pausable')(false))))),
+    mergeWith(resume$.pipe(concatMap(() => of(createAction('pausable')(true))))),
     takeUntil(chunks$)
   )
 
@@ -276,16 +274,18 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
               if (e.message === 'Multiple_Chunk_Upload_Error') {
                 return retrySubject.pipe(filter((b) => b))
               } else {
-                return observableThrowError(e)
+                return observableThrowError(() => e)
               }
             })
           )
         }),
         takeUntil(abortSubject),
-        tap(() => {}, cleanUp, cleanUp),
-        merge(errorSubject.pipe(map((e) => createAction('error')(e)))),
-        merge(retrySubject.pipe(map((b) => createAction('retryable')(!b)))),
-        merge(abortSubject.pipe(concatMap(() => of(createAction('pausable')(false), createAction('retryable')(false)))))
+        tap({ error: cleanUp, complete: cleanUp }),
+        mergeWith(errorSubject.pipe(map((e) => createAction('error')(e)))),
+        mergeWith(retrySubject.pipe(map((b) => createAction('retryable')(!b)))),
+        mergeWith(
+          abortSubject.pipe(concatMap(() => of(createAction('pausable')(false), createAction('retryable')(false))))
+        )
       )
       .subscribe(observer)
 

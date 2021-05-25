@@ -1,4 +1,4 @@
-import { Observable, Observer, from } from 'rxjs'
+import { Observable, Observer, from, of } from 'rxjs'
 import { filter, map, concatMap, toArray, switchAll } from 'rxjs/operators'
 
 import { excludeFolder } from './util'
@@ -9,19 +9,19 @@ export interface HandleDropOptions {
   onDrop: (e: HTMLElement, files: File[]) => void
 }
 
-const scanFiles = (entry: any, isInsideDir = false) => {
+const scanFiles = (entry: any, isInsideDir = false): Observable<File[]> => {
   if (entry.isFile) {
-    return Observable.create((observer: Observer<any>) => {
+    return new Observable((observer: Observer<any>) => {
       entry.file((file: Event) => {
         try {
-          (<any>file).path = isInsideDir ? entry.fullPath.slice(1) : ''
+          ;(<any>file).path = isInsideDir ? entry.fullPath.slice(1) : ''
         } catch (_) {}
         observer.next(file)
         observer.complete()
       })
     })
   } else if (entry.isDirectory) {
-    return Observable.create((observer: Observer<Observable<any>>) => {
+    return new Observable((observer: Observer<Observable<any>>) => {
       entry.createReader().readEntries((entries: any) => {
         if (entries.length === 0) {
           observer.complete()
@@ -31,6 +31,8 @@ const scanFiles = (entry: any, isInsideDir = false) => {
         }
       })
     }).pipe(switchAll())
+  } else {
+    return of([])
   }
 }
 
@@ -38,7 +40,7 @@ export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDrop
   const onDrop = options.onDrop || (() => {})
   const onHover = options.onHover || (() => {})
 
-  return Observable.create((obs: Observer<File[]>) => {
+  return new Observable((obs: Observer<File[]>) => {
     let enterCount = 0
 
     dropElement.ondragenter = (e) => {
@@ -71,7 +73,7 @@ export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDrop
 
       const items = e.dataTransfer.items
       const files = e.dataTransfer.files
-      let files$
+      let files$: Observable<File[]> | undefined
       if (items && items.length) {
         files$ = from(Array.prototype.slice.call(items)).pipe(
           filter((item: DataTransferItem) => {
@@ -86,13 +88,14 @@ export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDrop
         files$ = from(Array.prototype.slice.call(files)).pipe(
           concatMap(excludeFolder),
           map((file: File) => {
-            (<any>file).path = ''
+            ;(<any>file).path = ''
             return file
-          })
+          }),
+          toArray()
         )
       }
       if (files$) {
-        files$.pipe(toArray()).subscribe((fs: File[]) => {
+        files$.subscribe((fs: File[]) => {
           obs.next(fs)
           onDrop(dropElement, fs)
         })
