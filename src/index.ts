@@ -15,5 +15,5 @@ export {
 export { HandleClickConfig, getFilesFromInput, handleClick } from './handleClick'
 export { handlePaste } from './handlePaste'
 export { HandleDropOptions, handleDrop } from './handleDrop'
-export { PostConfig, post } from './post'
+export { post } from './post'
 export { excludeFolder, createAction } from './util'
