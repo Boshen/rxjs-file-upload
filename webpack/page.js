@@ -24,16 +24,6 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.ts?$/,
-        enforce: 'pre',
-        loader: 'tslint-loader',
-        exclude: [/node_modules/],
-        query: {
-          emitErrors: true,
-          formatter: 'stylish',
-        },
-      },
-      {
         test: /\.ts$/,
         loader: 'ts-loader',
         options: {
