@@ -5,6 +5,13 @@ const sinonChai = require('sinon-chai')
 chai.use(sinonChai)
 const expect = chai.expect
 
+if (!ArrayBuffer['isView']) {
+  // @ts-ignore
+  ArrayBuffer.isView = function (a) {
+    return a !== null && typeof a === 'object' && a['buffer'] instanceof ArrayBuffer
+  }
+}
+
 import { empty, of } from 'rxjs'
 import { filter } from 'rxjs/operators'
 import { createMockFile } from './util'
