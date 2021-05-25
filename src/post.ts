@@ -1,11 +1,12 @@
-import { ajax, AjaxRequest, AjaxResponse } from 'rxjs/ajax'
+import { PartialObserver } from 'rxjs'
+import { ajax } from 'rxjs/ajax'
 import { map } from 'rxjs/operators'
 
 export interface PostConfig {
   url: string
   body?: {}
   headers?: {}
-  progressSubscriber?: AjaxRequest['progressSubscriber']
+  progressSubscriber?: PartialObserver<ProgressEvent>
 }
 
 export const post = ({ url, body, headers, progressSubscriber }: PostConfig) => {
@@ -16,5 +17,5 @@ export const post = ({ url, body, headers, progressSubscriber }: PostConfig) => 
     method: 'POST',
     crossDomain: true,
     progressSubscriber,
-  }).pipe(map((r: AjaxResponse) => r.response))
+  }).pipe(map((r) => r.response))
 }

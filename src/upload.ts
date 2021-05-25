@@ -14,7 +14,7 @@ export const createUploadSubjects = () => {
   return {
     startSubject: new ReplaySubject(1),
     retrySubject: new Subject<boolean>(),
-    abortSubject: new Subject(),
+    abortSubject: new Subject<void>(),
     progressSubject: new Subject<number>(),
     errorSubject: new Subject<boolean>(),
   }

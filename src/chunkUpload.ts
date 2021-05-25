@@ -180,7 +180,7 @@ export const createChunkUploadSubjects = () => {
   return {
     startSubject: new ReplaySubject(1),
     retrySubject: new Subject<boolean>(),
-    abortSubject: new ReplaySubject(1),
+    abortSubject: new ReplaySubject<void>(1),
     progressSubject: new Subject<ChunkProgress>(),
     controlSubject: new Subject<boolean>(),
     errorSubject: new Subject<boolean>(),
