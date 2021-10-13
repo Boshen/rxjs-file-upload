@@ -12,9 +12,9 @@
   "files": ["dist/*", "src/*"],
   "scripts": {
     "prepare": "husky install",
-    "start": "webpack-dev-server --config webpack/dev.js",
+    "start": "vite ./test",
     "lint": "pnpm eslint src/*.ts",
-    "page": "rm -rf page && webpack --config webpack/page.js",
+    "page": "rm -rf page && vite build ./test",
     "deploy": "pnpm run page && gh-pages -d page",
     "watch": "karma start",
     "test": "karma start --single-run",
@@ -31,13 +31,11 @@
     "@typescript-eslint/eslint-plugin": "5.0.0",
     "@typescript-eslint/parser": "5.0.0",
     "chai": "^4.3.4",
-    "chunk-manifest-webpack-plugin": "^1.1.2",
     "css-loader": "^6.4.0",
     "eslint": "8.0.0",
     "eslint-config-prettier": "8.3.0",
     "eslint-plugin-prettier": "4.0.0",
     "gh-pages": "^3.2.3",
-    "html-webpack-plugin": "^5.3.2",
     "husky": "^7.0.2",
     "karma": "^6.3.4",
     "karma-chrome-launcher": "^3.1.0",
@@ -54,10 +52,7 @@
     "ts-node": "^10.3.0",
     "tslib": "^1.10.0",
     "typescript": "^4.4.4",
-    "webpack": "^5.58.1",
-    "webpack-chunk-hash": "^0.6.0",
-    "webpack-cli": "^4.9.0",
-    "webpack-dev-server": "^4.3.1"
+    "vite": "^2.6.7"
   },
   "prettier": {
     "printWidth": 120,

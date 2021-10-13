@@ -1,10 +1,7 @@
-export { UploadConfig, createUploadSubjects, upload } from './upload'
+export type { UploadConfig } from './upload'
+export { createUploadSubjects, upload } from './upload'
+export type { FileMeta, UploadChunksConfig, ChunkStatus, ChunkProgress, ChunkScan } from './chunkUpload'
 export {
-  FileMeta,
-  UploadChunksConfig,
-  ChunkStatus,
-  ChunkProgress,
-  ChunkScan,
   sliceFile,
   startChunkUpload,
   finishChunkUpload,
@@ -12,8 +9,10 @@ export {
   createChunkUploadSubjects,
   chunkUpload,
 } from './chunkUpload'
-export { HandleClickConfig, getFilesFromInput, handleClick } from './handleClick'
+export type { HandleClickConfig } from './handleClick'
+export { getFilesFromInput, handleClick } from './handleClick'
 export { handlePaste } from './handlePaste'
-export { HandleDropOptions, handleDrop } from './handleDrop'
+export type { HandleDropOptions } from './handleDrop'
+export { handleDrop } from './handleDrop'
 export { post } from './post'
 export { excludeFolder, createAction } from './util'

@@ -1,6 +1,6 @@
-require('mocha/mocha.css')
-require('mocha/mocha.js')
-const chai = require('chai')
+import 'mocha/mocha.css'
+import 'mocha/mocha.js'
+import chai from 'chai'
 const expect = chai.expect
 const Suite = (<any>Mocha).Suite
 const Test = (<any>Mocha).Test
@@ -86,7 +86,7 @@ const handleUpload = (files$: Observable<File[]>) => {
         li.appendChild($name)
         list.appendChild(li)
 
-        const uploadFn: Function = /^image/.test(file.type) ? upload : chunkUpload
+        const uploadFn: any = /^image/.test(file.type) ? upload : chunkUpload
         const { abort, pause, resume, retry, upload$ } = uploadFn(file, getUploadConfig())
 
         if (abort) {
@@ -111,21 +111,24 @@ const handleUpload = (files$: Observable<File[]>) => {
         return upload$
           .do(({ action, payload }: { action: string; payload: any }) => {
             switch (action) {
-              case 'upload/pausable':
+              case 'upload/pausable': {
                 $pause.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
                 $resume.setAttribute('style', !payload ? 'visibility: visible' : 'visibility: hidden')
                 break
-              case 'upload/abortable':
+              }
+              case 'upload/abortable': {
                 $abort.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
                 break
-              case 'upload/retryable':
+              }
+              case 'upload/retryable': {
                 $retry.setAttribute('style', payload ? 'visibility: visible' : 'visibility: hidden')
                 break
-              case 'upload/start':
+              }
+              case 'upload/start': {
                 if (uploadFn === upload) {
                   break
                 }
-                let startFileMeta = payload
+                const startFileMeta = payload
                 console.info('start: ', startFileMeta)
                 suite.addTest(
                   new Test('should have start fileMeta', () => {
@@ -145,8 +148,9 @@ const handleUpload = (files$: Observable<File[]>) => {
                   })
                 )
                 break
-              case 'upload/progress':
-                let p = payload
+              }
+              case 'upload/progress': {
+                const p = payload
                 $progress.value = p
                 suite.addTest(
                   new Test('should progress with percentage ' + p, () => {
@@ -156,8 +160,9 @@ const handleUpload = (files$: Observable<File[]>) => {
                   })
                 )
                 break
-              case 'upload/finish':
-                let finishFileMeta = payload
+              }
+              case 'upload/finish': {
+                const finishFileMeta = payload
                 console.info('finish: ', finishFileMeta)
                 suite.addTest(
                   new Test('check response data', () => {
@@ -185,9 +190,11 @@ const handleUpload = (files$: Observable<File[]>) => {
                   })
                 )
                 break
-              case 'upload/start':
+              }
+              case 'upload/error': {
                 console.error(payload)
                 break
+              }
               default:
                 break
             }
@@ -252,7 +259,7 @@ const testButton = document.getElementById('test')!
 fromEvent(testButton, 'click')
   .pipe(take(1))
   .subscribe(() => {
-    let mochaDiv = document.createElement('div')
+    const mochaDiv = document.createElement('div')
     mochaDiv.id = 'mocha'
     document.body.appendChild(mochaDiv)
     mocha.checkLeaks()
