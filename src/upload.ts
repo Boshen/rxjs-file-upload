@@ -5,7 +5,7 @@ import { post } from './post'
 import { createAction } from './util'
 
 export interface UploadConfig {
-  headers?: {}
+  headers?: Record<string, any>
   autoStart?: boolean
   getUploadUrl: () => string
 }

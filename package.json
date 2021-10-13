@@ -9,6 +9,7 @@
     "type": "git",
     "url": "git+ssh://git@github.com:Boshen/rxjs-file-upload.git"
   },
+  "files": ["dist/*", "src/*"],
   "scripts": {
     "prepare": "husky install",
     "start": "webpack-dev-server --config webpack/dev.js",
@@ -60,7 +61,6 @@
     "webpack-cli": "^3.3.11",
     "webpack-dev-server": "^3.11.0"
   },
-  "files": ["dist/*", "src/*"],
   "prettier": {
     "printWidth": 120,
     "semi": false,

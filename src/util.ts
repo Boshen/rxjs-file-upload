@@ -22,4 +22,7 @@ export const excludeFolder = (file: File) => {
   )
 }
 
-export const createAction = (action: string) => (payload: {}) => ({ action: `upload/${action}`, payload })
+export const createAction = (action: string) => (payload: any) => ({
+  action: `upload/${action}`,
+  payload,
+})

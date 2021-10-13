@@ -15,7 +15,7 @@ const isBlob = (blob: Blob | null) => {
 export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
   return fromEvent(pasteElement, 'paste').pipe(
     map((e: ClipboardEvent) => {
-      const items = e.clipboardData!.items
+      const items = e.clipboardData?.items
       const files: File[] = []
       if (items) {
         for (let i = 0; i < items.length; i++) {
@@ -24,7 +24,7 @@ export const handlePaste = (pasteElement: HTMLElement): Observable<File[]> => {
             let file
             const name = `Screenshot-${uid++}.png`
             try {
-              file = new File([blob!], name, { type: image })
+              file = blob && new File([blob], name, { type: image })
             } catch (_) {
               file = <any>blob
               file.lastModifiedDate = new Date()

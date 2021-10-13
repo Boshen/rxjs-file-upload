@@ -15,7 +15,7 @@ const scanFiles = (entry: any, isInsideDir = false): Observable<File> => {
       entry.file((file: Event) => {
         try {
           ;(<any>file).path = isInsideDir ? entry.fullPath.slice(1) : ''
-        } catch (_) {}
+        } catch {}
         observer.next(file)
         observer.complete()
       })
@@ -81,7 +81,7 @@ export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDrop
           map((item: DataTransferItem) => {
             return item.webkitGetAsEntry()
           }),
-          concatMap((entry: any) => scanFiles(entry)),
+          concatMap((entry: any) => scanFiles(entry))
         )
       } else if (files && files.length) {
         files$ = from(Array.prototype.slice.call(files)).pipe(
@@ -89,7 +89,7 @@ export const handleDrop = (dropElement: HTMLElement, options: Partial<HandleDrop
           map((file: File) => {
             ;(<any>file).path = ''
             return file
-          }),
+          })
         )
       }
       if (files$) {

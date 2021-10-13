@@ -7,7 +7,7 @@ export interface HandleClickConfig {
   directory?: boolean
 }
 
-let globalInputButton!: HTMLInputElement
+let globalInputButton: HTMLInputElement
 
 export const getFilesFromInput = (config: HandleClickConfig = {}): Observable<File[]> => {
   if (!globalInputButton) {
@@ -24,16 +24,16 @@ export const getFilesFromInput = (config: HandleClickConfig = {}): Observable<Fi
     globalInputButton['webkitdirectory'] = config.directory || false
     globalInputButton.value = ''
     globalInputButton.onchange = () => {
-      const files = Array.prototype.slice.call(globalInputButton!.files)
+      const files = Array.prototype.slice.call(globalInputButton?.files ?? [])
       files.forEach((file: File) => {
         ;(<any>file).path = (<any>file).webkitRelativePath
       })
       obs.next(files)
       obs.complete()
     }
-    globalInputButton!.click()
+    globalInputButton.click()
     return () => {
-      globalInputButton!.value = ''
+      globalInputButton.value = ''
     }
   })
 }

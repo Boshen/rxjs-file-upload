@@ -58,7 +58,7 @@ export interface FileMeta {
 }
 
 export interface UploadChunksConfig {
-  headers?: {}
+  headers?: Record<string, any>
   autoStart?: boolean
   getChunkStartUrl: () => string
   getChunkUrl: (fileMeta: FileMeta, index: number) => string
@@ -240,7 +240,7 @@ export const chunkUpload = (file: File, config: UploadChunksConfig, controlSubje
     })
   )
 
-  const upload$ = new Observable<{ action: string; payload: {} }>((observer) => {
+  const upload$ = new Observable<{ action: string; payload: any }>((observer) => {
     const abortSubs = abortSubject
       .pipe(
         take(1),
