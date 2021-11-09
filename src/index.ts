@@ -11,7 +11,7 @@ export {
 } from './chunkUpload'
 export type { HandleClickConfig } from './handleClick'
 export { getFilesFromInput, handleClick } from './handleClick'
-export { handlePaste } from './handlePaste'
+export { handlePaste, handlePasteEvent } from './handlePaste'
 export type { HandleDropOptions } from './handleDrop'
 export { handleDrop } from './handleDrop'
 export { post } from './post'
