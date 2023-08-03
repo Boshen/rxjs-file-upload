@@ -2206,7 +2206,7 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
     dependencies:
-      minimist: 1.2.5
+      minimist: 1.2.8
     dev: true
 
   /jsonfile@4.0.0:
@@ -2228,7 +2228,7 @@ packages:
   /karma-mocha@2.0.1:
     resolution: {integrity: sha512-Tzd5HBjm8his2OA4bouAsATYEpZrp9vC7z5E5j4C5Of5Rrs1jY67RAwXNcVmd/Bnk1wgvQRou0zGVLey44G4tQ==}
     dependencies:
-      minimist: 1.2.5
+      minimist: 1.2.8
     dev: true
 
   /karma-typescript@5.5.2(karma@6.3.8)(typescript@4.4.4):
@@ -2511,8 +2511,8 @@ packages:
       brace-expansion: 1.1.11
     dev: true
 
-  /minimist@1.2.5:
-    resolution: {integrity: sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==}
+  /minimist@1.2.8:
+    resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
     dev: true
 
   /mocha@9.1.3:
